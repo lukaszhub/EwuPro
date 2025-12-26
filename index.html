@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EwuPro App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EwuPro</title>
+  
+  <!-- PWA Manifest Link -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="apple-touch-icon" href="icon-192.png">
   
   <!-- 1. Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -29,6 +34,8 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
     /* Custom scrollbar for desktop */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -40,16 +47,17 @@
       display: none;
       -webkit-appearance: none;
     }
+    
+    /* Mobile tap highlight fix */
+    * { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 text-gray-900 select-none">
 
-  <!-- The React app will mount here -->
   <div id="root"></div>
 
   <!-- 5. Firebase JS SDKs -->
   <script type="module">
-    // Make Firebase functions available globally
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
@@ -58,56 +66,63 @@
       setLogLevel
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     
+    // Make Firebase available to React
     window.firebase = {
-      initializeApp,
-      getAuth,
-      signInAnonymously,
-      signInWithCustomToken,
-      onAuthStateChanged,
-      getFirestore,
-      doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
-      onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp,
-      setLogLevel
+      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+      getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
+      onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, setLogLevel
     };
   </script>
 
   <!-- 6. The React Application Code -->
-  <!-- This MUST be type="text/babel" -->
   <script type="text/babel">
-    
-    // --- React Setup ---
-    const { 
-      useState, useEffect, useRef, useMemo, useCallback 
-    } = React;
+    const { useState, useEffect, useRef, useMemo, useCallback } = React;
     const { createRoot } = ReactDOM;
 
-    // --- Firebase Setup ---
-    // Destructure functions from the global window.firebase object
+    // --- FIREBASE CONFIGURATION (IMPORTANT) ---
+    // You MUST replace the object below with your actual Firebase config from the Firebase Console.
+const YOUR_FIREBASE_CONFIG = {
+      apiKey: "PASTE_YOUR_API_KEY_HERE",
+      authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
+      projectId: "PASTE_YOUR_PROJECT_ID_HERE",
+      storageBucket: "PASTE_YOUR_STORAGE_BUCKET_HERE",
+      messagingSenderId: "PASTE_YOUR_SENDER_ID_HERE",
+      appId: "PASTE_YOUR_APP_ID_HERE"
+    };
+
+    // --- App Logic Starts Here ---
+    
     const {
-      initializeApp,
-      getAuth,
-      signInAnonymously,
-      signInWithCustomToken,
-      onAuthStateChanged,
-      getFirestore,
-      doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
-      onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp,
-      setLogLevel
+      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+      getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
+      onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, setLogLevel
     } = window.firebase;
 
-    // --- Firebase Initialization ---
-    // These globals are provided by the app environment
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'ewupro-app-dev';
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    const firebaseConfig = (typeof __firebase_config !== 'undefined') 
+      ? JSON.parse(__firebase_config) 
+      : YOUR_FIREBASE_CONFIG;
+      
+    const appId = (typeof __app_id !== 'undefined') ? __app_id : 'ewupro-app';
+    const initialAuthToken = (typeof __initial_auth_token !== 'undefined') ? __initial_auth_token : null;
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    setLogLevel('debug');
+    let app, db, auth;
+    try {
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
+    } catch (e) {
+      console.error("Firebase Init Error", e);
+    }
 
-    // --- Icon Component ---
-    // Using inline SVGs for Lucide icons
+    // --- Helper: Local Date String (YYYY-MM-DD) ---
+    const getLocalDateStr = (date = new Date()) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // --- Icons ---
     const Icon = ({ name, size = 24, className = "" }) => {
       const icons = {
         Home: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>),
@@ -120,7 +135,6 @@
         Trash2: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>),
         Bell: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>),
         User: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>),
-        LogOut: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>),
         ChevronLeft: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>),
         ChevronRight: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>),
         X: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>),
@@ -128,25 +142,13 @@
         AlertTriangle: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg>),
         Copy: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>),
         Rss: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>),
+        Calendar: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>),
+        Refresh: (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>),
       };
       return <span className={className}>{icons[name] || null}</span>;
     };
 
-    // --- Helper Functions ---
-    const getMonthYear = (isoDate) => {
-      const date = new Date(isoDate);
-      return date.toLocaleString('default', { month: 'long', year: 'numeric' });
-    };
-
-    const getDayMonthYear = (isoDate) => {
-      const date = new Date(isoDate);
-      return date.toLocaleString('default', { day: 'numeric', month: 'long', year: 'numeric' });
-    };
-    
-    const getISODate = (date) => {
-      return date.toISOString().split('T')[0];
-    };
-
+    // --- Formatters ---
     const formatTime = (totalMinutes) => {
       if (isNaN(totalMinutes) || totalMinutes === 0) return '0m';
       const hours = Math.floor(totalMinutes / 60);
@@ -157,33 +159,41 @@
       return str.trim();
     };
 
-    // --- Component Order Fix: Define All Helper Components First ---
+    const formatDateDisplay = (dateStr) => {
+      if (!dateStr) return 'Invalid Date';
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day); 
+      return date.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    };
 
-    /**
-     * Header Component
-     */
+    const getMonthYear = (dateStr) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+    };
+
+    // --- COMPONENTS ---
+
     const Header = ({ currentPage, onNavClick }) => {
       const navButton = (page, icon, label) => {
         const isActive = currentPage === page;
         return (
           <button
             onClick={() => onNavClick(page)}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-4 py-2 rounded-lg transition-all ${
-              isActive
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-4 py-2 rounded-lg transition-all active:scale-95 ${
+              isActive ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
             <Icon name={icon} size={20} />
-            <span className="text-sm sm:text-base font-medium hidden sm:inline">{label}</span>
+            <span className="text-xs sm:text-base font-medium hidden sm:inline">{label}</span>
           </button>
         );
       };
 
       return (
-        <header className="bg-white shadow-md sticky top-0 z-40">
-          <div className="max-w-5xl mx-auto p-4 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-blue-700">EwuPro</h1>
+        <header className="bg-white shadow-sm sticky top-0 z-40">
+          <div className="max-w-3xl mx-auto p-3 sm:p-4 flex justify-between items-center">
+            <h1 className="text-xl sm:text-2xl font-bold text-blue-700 tracking-tight">EwuPro</h1>
             <nav className="flex gap-2">
               {navButton('log', 'Home', 'Home')}
               {navButton('stats', 'BarChart2', 'Stats')}
@@ -194,203 +204,884 @@
       );
     };
 
-    /**
-     * Time Picker Modal Component
-     */
     const TimePickerModal = ({ log, onClose, onSave }) => {
       const [hours, setHours] = useState(Math.floor(log.totalMinutes / 60));
       const [minutes, setMinutes] = useState(log.totalMinutes % 60);
+      const [date, setDate] = useState(log.date); // Initialize with log date
+      const [view, setView] = useState('time'); // 'time' or 'date'
 
-      const handleSave = () => {
-        const total = (parseInt(hours) * 60) + parseInt(minutes);
-        onSave(total);
-        onClose();
-      };
+      // --- Calendar Logic Embedded for Mode Switching ---
+      const [currentMonth, setCurrentMonth] = useState(() => {
+        const [y, m, d] = log.date.split('-').map(Number);
+        return new Date(y, m - 1, 1);
+      });
 
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-            <h3 className="text-xl font-semibold text-center mb-4">{log.projectName}</h3>
-            <div className="flex justify-center gap-4 mb-6">
-              {/* Hours */}
-              <div>
-                <label htmlFor="hours" className="block text-sm font-medium text-gray-500 mb-1 text-center">Hours</label>
-                <select
-                  id="hours"
-                  value={hours}
-                  onChange={(e) => setHours(e.target.value)}
-                  className="text-2xl p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {[...Array(24).keys()].map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
-              </div>
-              {/* Minutes */}
-              <div>
-                <label htmlFor="minutes" className="block text-sm font-medium text-gray-500 mb-1 text-center">Minutes</label>
-                <select
-                  id="minutes"
-                  value={minutes}
-                  onChange={(e) => setMinutes(e.target.value)}
-                  className="text-2xl p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="0">0</option>
-                  <option value="15">15</option>
-                  <option value="30">30</option>
-                  <option value="45">45</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 p-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex-1 p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all"
-              >
-                Save Time
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    };
-
-    /**
-     * Date Picker Modal Component
-     */
-    const DatePickerModal = ({ selectedDate, onClose, onSave }) => {
-      const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate + 'T12:00:00'));
-
-      const getDaysInMonth = (date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        
+      const getDaysInMonth = (d) => {
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
         let days = [];
-        for (let i = 0; i < firstDay; i++) {
-          days.push(null); // Blanks for start of month
-        }
-        for (let i = 1; i <= daysInMonth; i++) {
-          days.push(new Date(year, month, i));
-        }
+        for (let i = 0; i < firstDay; i++) days.push(null);
+        for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i));
         return days;
       };
 
-      const [days, setDays] = useState(getDaysInMonth(currentMonth));
-
       const changeMonth = (offset) => {
-        const newMonth = new Date(currentMonth.setMonth(currentMonth.getMonth() + offset));
-        setCurrentMonth(newMonth);
-        setDays(getDaysInMonth(newMonth));
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
       };
 
-      const handleDayClick = (day) => {
-        if (!day) return;
-        onSave(getISODate(day));
+      const handleDayClick = (d) => {
+        if (!d) return;
+        setDate(getLocalDateStr(d));
+        setView('time'); // Switch back to time view after selecting date
+      };
+
+      const days = getDaysInMonth(currentMonth);
+      const isSelected = (d) => d && getLocalDateStr(d) === date;
+      const isToday = (d) => d && getLocalDateStr(d) === getLocalDateStr(new Date());
+
+      const handleSave = () => {
+        const total = (parseInt(hours) * 60) + parseInt(minutes);
+        onSave(total, date); // Pass date back
         onClose();
       };
 
-      const isSelected = (day) => {
-        if (!day) return false;
-        return getISODate(day) === selectedDate;
-      };
-
-      const isToday = (day) => {
-        if (!day) return false;
-        return getISODate(day) === getISODate(new Date());
-      };
-
       return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-            <div className="flex justify-between items-center mb-4">
-              <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-100">
-                <Icon name="ChevronLeft" size={20} />
-              </button>
-              <h3 className="text-lg font-semibold">
-                {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-              </h3>
-              <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-100">
-                <Icon name="ChevronRight" size={20} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-[fadeIn_0.2s_ease-out]">
+            <h3 className="text-xl font-bold text-gray-800 text-center mb-2">{log.projectName}</h3>
+            
+            {/* Date Toggle Header */}
+            <div className="flex justify-center mb-6">
+              <button 
+                onClick={() => setView(view === 'time' ? 'date' : 'time')}
+                className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                <Icon name="Calendar" size={16} />
+                {formatDateDisplay(date)}
+                <Icon name={view === 'time' ? 'ChevronRight' : 'ChevronDown'} size={14} />
               </button>
             </div>
-            
-            <div className="grid grid-cols-7 gap-1 text-center">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-xs font-medium text-gray-500">{day}</div>
-              ))}
-              
-              {days.map((day, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleDayClick(day)}
-                  disabled={!day}
-                  className={`h-10 w-10 rounded-full transition-all ${
-                    !day ? 'bg-transparent' : 'hover:bg-gray-100'
-                  } ${
-                    isToday(day) ? 'font-bold text-blue-600' : ''
-                  } ${
-                    isSelected(day) ? '!bg-blue-600 !text-white' : ''
+
+            {view === 'time' ? (
+              <>
+                <div className="flex justify-center gap-4 mb-8">
+                  <div className="flex-1 text-center">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Hours</label>
+                    <select value={hours} onChange={(e) => setHours(e.target.value)} className="w-full text-3xl font-bold text-center p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 outline-none">
+                      {[...Array(24).keys()].map(h => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Minutes</label>
+                    <select value={minutes} onChange={(e) => setMinutes(e.target.value)} className="w-full text-3xl font-bold text-center p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 outline-none">
+                      {[0, 15, 30, 45].map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl active:bg-gray-200">Cancel</button>
+                  <button onClick={handleSave} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-200 active:bg-blue-700">Save</button>
+                </div>
+              </>
+            ) : (
+              <div className="animate-[fadeIn_0.2s_ease-out]">
+                <div className="flex justify-between items-center mb-4">
+                  <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
+                  <h3 className="text-md font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+                  <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                  {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map((d, i) => (
+                    <button 
+                      key={i} 
+                      disabled={!d} 
+                      onClick={() => handleDayClick(d)}
+                      className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                        !d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {d ? d.getDate() : ''}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setView('time')} className="w-full mt-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm">Cancel Date Change</button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const DatePickerModal = ({ selectedDate, onClose, onSave }) => {
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const [currentMonth, setCurrentMonth] = useState(new Date(year, month - 1, 1));
+
+      const getDaysInMonth = (date) => {
+        const y = date.getFullYear();
+        const m = date.getMonth();
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        let days = [];
+        for (let i = 0; i < firstDay; i++) days.push(null);
+        for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i));
+        return days;
+      };
+
+      const days = getDaysInMonth(currentMonth);
+
+      const changeMonth = (offset) => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
+      };
+
+      const handleDayClick = (d) => {
+        if (!d) return;
+        onSave(getLocalDateStr(d));
+        onClose();
+      };
+
+      const isSelected = (d) => d && getLocalDateStr(d) === selectedDate;
+      const isToday = (d) => d && getLocalDateStr(d) === getLocalDateStr(new Date());
+
+      return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
+              <h3 className="text-lg font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+              <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center mb-2">
+              {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {days.map((d, i) => (
+                <button 
+                  key={i} 
+                  disabled={!d} 
+                  onClick={() => handleDayClick(d)}
+                  className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                    !d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'
                   }`}
                 >
-                  {day ? day.getDate() : ''}
+                  {d ? d.getDate() : ''}
                 </button>
               ))}
             </div>
-            
-            <button
-              onClick={onClose}
-              className="w-full mt-4 p-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-all"
-            >
-              Cancel
-            </button>
+            <button onClick={onClose} className="w-full mt-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
           </div>
         </div>
       );
     };
 
-    /**
-     * Delete Confirmation Modal
-     */
-    const DeleteConfirmationModal = ({ log, onClose, onConfirm }) => {
+    const DeleteConfirmationModal = ({ log, onClose, onConfirm }) => (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Icon name="AlertTriangle" size={32} className="text-red-500" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Entry?</h3>
+          <p className="text-gray-500 mb-6">Are you sure you want to delete <strong className="text-gray-800">{log.projectName}</strong> for {formatDateDisplay(log.date)}?</p>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
+            <button onClick={() => onConfirm(log.id)} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete</button>
+          </div>
+        </div>
+      </div>
+    );
+
+    const NewProjectModal = ({ onClose, onSave, initialValue }) => {
+      const [name, setName] = useState(initialValue || '');
+      const [hours, setHours] = useState(0);
+      const [minutes, setMinutes] = useState(0);
+      const [date, setDate] = useState(getLocalDateStr()); 
+      const [view, setView] = useState('time'); 
+
+      // Calendar Logic
+      const [currentMonth, setCurrentMonth] = useState(new Date());
+
+      const getDaysInMonth = (d) => {
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        let days = [];
+        for (let i = 0; i < firstDay; i++) days.push(null);
+        for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i));
+        return days;
+      };
+
+      const changeMonth = (offset) => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
+      };
+
+      const handleDayClick = (d) => {
+        if (!d) return;
+        setDate(getLocalDateStr(d));
+        setView('time');
+      };
+
+      const days = getDaysInMonth(currentMonth);
+      const isSelected = (d) => d && getLocalDateStr(d) === date;
+      const isToday = (d) => d && getLocalDateStr(d) === getLocalDateStr(new Date());
+
+      const handleSave = () => {
+        if (name.trim()) {
+            const total = (parseInt(hours) * 60) + parseInt(minutes);
+            onSave(name, total, date);
+        }
+      }
+
       return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Icon name="AlertTriangle" size={32} className="text-red-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Delete Log?</h3>
-              <p className="text-gray-500 mb-6">
-                Are you sure you want to delete the log for <strong className="text-gray-700">{log.projectName}</strong> on {getDayMonthYear(log.date)}?
-              </p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-[fadeIn_0.2s_ease-out]">
+            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">New Project</h3>
+            
+            <input 
+              type="text" 
+              placeholder="Project Name" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              className="w-full p-3 border border-gray-200 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            />
+
+            {/* Date Toggle */}
+            <div className="flex justify-center mb-6">
+              <button 
+                onClick={() => setView(view === 'time' ? 'date' : 'time')}
+                className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                <Icon name="Calendar" size={16} />
+                {formatDateDisplay(date)}
+                <Icon name={view === 'time' ? 'ChevronRight' : 'ChevronDown'} size={14} />
+              </button>
             </div>
+
+            {view === 'time' ? (
+              <>
+                <div className="flex justify-center gap-4 mb-8">
+                  <div className="flex-1 text-center">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Hours</label>
+                    <select value={hours} onChange={(e) => setHours(e.target.value)} className="w-full text-3xl font-bold text-center p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 outline-none">
+                      {[...Array(24).keys()].map(h => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Minutes</label>
+                    <select value={minutes} onChange={(e) => setMinutes(e.target.value)} className="w-full text-3xl font-bold text-center p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 outline-none">
+                      {[0, 15, 30, 45].map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
+                  <button onClick={handleSave} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg">Create</button>
+                </div>
+              </>
+            ) : (
+              <div className="animate-[fadeIn_0.2s_ease-out]">
+                <div className="flex justify-between items-center mb-4">
+                  <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
+                  <h3 className="text-md font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+                  <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                  {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map((d, i) => (
+                    <button 
+                      key={i} 
+                      disabled={!d} 
+                      onClick={() => handleDayClick(d)}
+                      className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                        !d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {d ? d.getDate() : ''}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setView('time')} className="w-full mt-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm">Cancel Date Change</button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const DeleteProjectModal = ({ project, onClose, onConfirm }) => (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Icon name="AlertTriangle" size={32} className="text-red-500" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Project?</h3>
+          <p className="text-gray-600 mb-2">Are you sure you want to delete <strong className="text-gray-900">{project.name}</strong>?</p>
+          <p className="text-red-600 font-bold text-sm mb-6 bg-red-50 p-2 rounded">Warning: This will also delete ALL time logs associated with this project. This cannot be undone.</p>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
+            <button onClick={() => onConfirm(project)} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete All</button>
+          </div>
+        </div>
+      </div>
+    );
+
+    const CsvExportModal = ({ csvData, onClose }) => {
+      const [status, setStatus] = useState('Copy to Clipboard');
+      const textAreaRef = useRef(null);
+
+      const copyToClipboard = async () => {
+        try {
+          await navigator.clipboard.writeText(csvData);
+          setStatus("Copied!");
+        } catch (err) {
+          textAreaRef.current.select();
+          document.execCommand('copy');
+          setStatus("Copied!");
+        }
+        setTimeout(() => setStatus('Copy to Clipboard'), 2000);
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Export Data</h3>
+            <p className="text-sm text-gray-500 mb-4">Direct share unavailable. Copy the data below:</p>
+            <textarea ref={textAreaRef} readOnly value={csvData} className="w-full h-40 p-3 text-xs font-mono bg-gray-50 border border-gray-200 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
             <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 p-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => onConfirm(log.id)}
-                className="flex-1 p-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-all"
-              >
-                Confirm Delete
-              </button>
+              <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Close</button>
+              <button onClick={copyToClipboard} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl">{status}</button>
             </div>
           </div>
         </div>
       );
     };
 
-    /**
-     * CsvExportModal Component
-     */
-    const CsvExportModal = ({ csvData, onClose }) => {
-      con
+    // --- PAGES ---
+
+    const LogPage = ({ logs, projects, userId }) => {
+      const [search, setSearch] = useState('');
+      const [filteredProjects, setFilteredProjects] = useState([]);
+      const [isSearchFocused, setIsSearchFocused] = useState(false);
+      const [selectedLog, setSelectedLog] = useState(null);
+      const [logToDelete, setLogToDelete] = useState(null);
+      const [logToEditDate, setLogToEditDate] = useState(null);
+      const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+      
+      const logsCollection = collection(db, 'artifacts', appId, 'users', userId, 'timeLogs');
+
+      const groupedLogs = useMemo(() => {
+        const groups = {};
+        [...logs].sort((a, b) => b.date.localeCompare(a.date)).forEach(log => {
+          const mY = getMonthYear(log.date);
+          if (!groups[mY]) groups[mY] = [];
+          groups[mY].push(log);
+        });
+        return groups;
+      }, [logs]);
+
+      useEffect(() => {
+        if (!isSearchFocused && !search) {
+          setFilteredProjects([]);
+          return;
+        }
+        const sorted = [...projects].sort((a, b) => a.name.localeCompare(b.name));
+        if (!search) setFilteredProjects(sorted);
+        else setFilteredProjects(sorted.filter(p => p.name.toLowerCase().includes(search.toLowerCase())));
+      }, [search, projects, isSearchFocused]);
+
+      const handleAddLog = async (project) => {
+        if(!userId) return;
+        const todayStr = getLocalDateStr();
+        const existing = logs.find(l => l.date === todayStr && l.projectId === project.id);
+        
+        if (existing) {
+          setSelectedLog(existing);
+        } else {
+          try {
+            await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), {
+              projectId: project.id,
+              projectName: project.name,
+              date: todayStr,
+              totalMinutes: 0,
+              createdAt: serverTimestamp()
+            });
+          } catch(e) { console.error(e); }
+        }
+        setSearch('');
+        setIsSearchFocused(false);
+      };
+
+      const handleQuickAddProject = async (name, totalMinutes, date) => {
+        if(!userId) return;
+        try {
+          const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { 
+            name: name.trim(), 
+            createdAt: serverTimestamp() 
+          });
+          
+          await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), {
+              projectId: docRef.id,
+              projectName: name.trim(),
+              date: date,
+              totalMinutes: totalMinutes,
+              createdAt: serverTimestamp()
+            });
+            
+        } catch(e) { console.error(e); }
+        setIsNewProjectModalOpen(false);
+        setSearch(''); // clear search
+      }
+
+      const handleTimeSave = async (total, newDate) => {
+        if(selectedLog) await updateDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', selectedLog.id), { totalMinutes: total, date: newDate || selectedLog.date });
+      };
+      
+      const handleDateSave = async (d) => {
+        if(logToEditDate) await updateDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', logToEditDate.id), { date: d });
+      };
+      
+      const handleDelete = async (id) => {
+        await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', id));
+        setLogToDelete(null);
+      };
+
+      return (
+        <div className="max-w-3xl mx-auto p-4 md:p-6 pb-24">
+          <div className="relative z-30 mb-6">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input type="text" placeholder="Search project..." value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                  className="w-full p-4 pl-12 text-lg rounded-2xl shadow-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Icon name="Search" /></span>
+              </div>
+              <button onClick={() => setIsNewProjectModalOpen(true)} className="p-4 bg-blue-600 text-white rounded-2xl shadow-sm hover:bg-blue-700 active:scale-95 transition-all">
+                <Icon name="Plus" />
+              </button>
+            </div>
+            
+            {isSearchFocused && (
+              <ul className="absolute w-full bg-white rounded-2xl shadow-xl mt-2 max-h-60 overflow-y-auto border border-gray-100 z-50">
+                {filteredProjects.length > 0 ? filteredProjects.map(p => (
+                  <li key={p.id}>
+                    <button onClick={() => handleAddLog(p)} className="w-full text-left p-4 hover:bg-gray-50 border-b border-gray-50 last:border-0 flex items-center justify-between group">
+                      <span className="font-medium text-gray-700 group-hover:text-blue-600">{p.name}</span>
+                      <Icon name="Plus" size={18} className="text-gray-300 group-hover:text-blue-500"/>
+                    </button>
+                  </li>
+                )) : <li className="p-4 text-gray-400 text-center">No projects found.</li>}
+              </ul>
+            )}
+          </div>
+
+          <div className="space-y-8">
+            {Object.keys(groupedLogs).length === 0 && <div className="text-center py-10 text-gray-400">No logs yet.</div>}
+            {Object.keys(groupedLogs).map(mY => (
+              <section key={mY}>
+                <h2 className="text-lg font-bold text-gray-800 mb-4 sticky top-16 bg-gray-100 py-2 z-10">{mY}</h2>
+                <div className="space-y-3">
+                  {groupedLogs[mY].map((log, idx) => {
+                    const prevLog = groupedLogs[mY][idx - 1];
+                    const showDate = !prevLog || prevLog.date !== log.date;
+                    
+                    return (
+                      <div key={log.id}>
+                        {showDate && (
+                          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4 ml-1">
+                            {formatDateDisplay(log.date)}
+                          </div>
+                        )}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <span className="text-base font-semibold text-gray-800">{log.projectName}</span>
+                          <div className="flex gap-2 self-end sm:self-auto w-full sm:w-auto">
+                            <button onClick={() => setSelectedLog(log)} className="flex-1 sm:flex-none flex items-center justify-center gap-1 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-bold text-sm">
+                              <Icon name="Clock" size={16} /> {formatTime(log.totalMinutes)}
+                            </button>
+                            <button onClick={() => setLogToEditDate(log)} className="flex-1 sm:flex-none flex items-center justify-center bg-gray-50 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium">
+                              {log.date.split('-')[2]}
+                            </button>
+                            <button onClick={() => setLogToDelete(log)} className="px-3 py-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100">
+                              <Icon name="Trash2" size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          {selectedLog && <TimePickerModal log={selectedLog} onClose={() => setSelectedLog(null)} onSave={handleTimeSave} />}
+          {logToDelete && <DeleteConfirmationModal log={logToDelete} onClose={() => setLogToDelete(null)} onConfirm={handleDelete} />}
+          {logToEditDate && <DatePickerModal selectedDate={logToEditDate.date} onClose={() => setLogToEditDate(null)} onSave={handleDateSave} />}
+          {isNewProjectModalOpen && <NewProjectModal onClose={() => setIsNewProjectModalOpen(false)} onSave={handleQuickAddProject} initialValue={search} />}
+        </div>
+      );
+    };
+
+    const StatsPage = ({ logs, projects }) => {
+      const [filterId, setFilterId] = useState('all');
+      const [csvData, setCsvData] = useState(null);
+
+      const filtered = useMemo(() => filterId === 'all' ? logs : logs.filter(l => l.projectId === filterId), [logs, filterId]);
+      
+      const stats = useMemo(() => {
+        const grandTotal = filtered.reduce((acc, l) => acc + l.totalMinutes, 0);
+        const months = {};
+        
+        filtered.forEach(l => {
+          const mY = getMonthYear(l.date);
+          if (!months[mY]) months[mY] = { total: 0, projects: {}, days: {} };
+          months[mY].total += l.totalMinutes;
+          
+          if (!months[mY].projects[l.projectName]) months[mY].projects[l.projectName] = 0;
+          months[mY].projects[l.projectName] += l.totalMinutes;
+          
+          if (!months[mY].days[l.date]) months[mY].days[l.date] = { total: 0, projects: {} };
+          months[mY].days[l.date].total += l.totalMinutes;
+          
+          if (!months[mY].days[l.date].projects[l.projectName]) months[mY].days[l.date].projects[l.projectName] = 0;
+          months[mY].days[l.date].projects[l.projectName] += l.totalMinutes;
+        });
+        
+        const sortedMonths = Object.keys(months).sort((a,b) => new Date(b) - new Date(a));
+        
+        return { grandTotal, months, sortedMonths };
+      }, [filtered]);
+
+      const handleExport = async () => {
+        let csv = "Date,Project,Hours,Minutes,Total Minutes\n";
+        filtered.forEach(l => {
+          const h = Math.floor(l.totalMinutes / 60);
+          const m = l.totalMinutes % 60;
+          csv += `${l.date},"${l.projectName}",${h},${m},${l.totalMinutes}\n`;
+        });
+        
+        const fileName = `ewupro_export_${getLocalDateStr()}.csv`;
+        const file = new File([csv], fileName, { type: 'text/csv' });
+
+        try {
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'EwuPro Export' });
+            return;
+          }
+        } catch(e) {}
+        
+        const uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        const link = document.createElement('a');
+        link.href = uri;
+        link.download = fileName;
+        if(typeof window.orientation !== 'undefined') {
+           setCsvData(csv);
+        } else {
+           link.click();
+        }
+      };
+
+      return (
+        <div className="max-w-3xl mx-auto p-4 md:p-6 pb-24">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Filter</label>
+                <select value={filterId} onChange={e => setFilterId(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="all">All Projects</option>
+                  {projects.sort((a,b)=>a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="sm:self-end">
+                <button onClick={handleExport} className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-bold rounded-xl shadow-md shadow-green-200 flex items-center justify-center gap-2">
+                  <Icon name="Download" size={20}/> Export
+                </button>
+              </div>
+            </div>
+            <div className="text-center p-6 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="text-xs font-bold text-blue-500 uppercase tracking-wide">Total Time</div>
+              <div className="text-4xl font-extrabold text-blue-900 mt-1">{formatTime(stats.grandTotal)}</div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {stats.sortedMonths.map(mY => {
+              const mData = stats.months[mY];
+              return (
+                <div key={mY} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800">{mY}</h3>
+                    <span className="font-bold text-blue-600">{formatTime(mData.total)}</span>
+                  </div>
+                  
+                  {filterId === 'all' && (
+                    <div className="p-4 border-b border-gray-100">
+                      <div className="text-xs font-bold text-gray-400 uppercase mb-2">Project Breakdown</div>
+                      {Object.keys(mData.projects).sort().map(p => (
+                        <div key={p} className="flex justify-between text-sm py-1">
+                          <span className="text-gray-600">{p}</span>
+                          <span className="font-medium text-gray-900">{formatTime(mData.projects[p])}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="p-4">
+                    <div className="text-xs font-bold text-gray-400 uppercase mb-3">Daily Log</div>
+                    <div className="space-y-3">
+                      {Object.keys(mData.days).sort((a,b) => b.localeCompare(a)).map(d => (
+                        <div key={d} className="bg-gray-50 p-3 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-semibold text-gray-700">{formatDateDisplay(d)}</span>
+                            <span className="font-bold text-gray-900">{formatTime(mData.days[d].total)}</span>
+                          </div>
+                          {filterId === 'all' && Object.keys(mData.days[d].projects).map(p => (
+                            <div key={p} className="flex justify-between text-xs text-gray-500">
+                              <span>{p}</span>
+                              <span>{formatTime(mData.days[d].projects[p])}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          {csvData && <CsvExportModal csvData={csvData} onClose={() => setCsvData(null)} />}
+        </div>
+      );
+    };
+
+    const AdminPage = ({ projects, settings, userId, onSettingsChange, publicMessage }) => {
+      const [newProj, setNewProj] = useState('');
+      const [isLoading, setIsLoading] = useState(false);
+      const [syncId, setSyncId] = useState('');
+      const [myPublicMsg, setMyPublicMsg] = useState(publicMessage || '');
+      const [projectToDelete, setProjectToDelete] = useState(null);
+
+      useEffect(() => { setMyPublicMsg(publicMessage || ''); }, [publicMessage]);
+
+      const addProject = async (e) => {
+        e.preventDefault();
+        if(!newProj.trim()) return;
+        setIsLoading(true);
+        try {
+          await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { name: newProj.trim(), createdAt: serverTimestamp() });
+          setNewProj('');
+        } catch(e){ console.error(e); }
+        setIsLoading(false);
+      };
+
+      const handleDeleteProject = async (project) => {
+        setIsLoading(true);
+        try {
+          // 1. Get all logs for this project
+          const logsQuery = query(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), where('projectId', '==', project.id));
+          const logsSnapshot = await getDocs(logsQuery);
+
+          // 2. Delete logs in batches
+          const batch = writeBatch(db);
+          logsSnapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+          });
+
+          // 3. Delete the project itself
+          const projectRef = doc(db, 'artifacts', appId, 'users', userId, 'projects', project.id);
+          batch.delete(projectRef);
+
+          await batch.commit();
+          setProjectToDelete(null);
+        } catch (error) {
+          console.error("Error deleting project:", error);
+        }
+        setIsLoading(false);
+      }
+
+      const updateSetting = async (key, val) => {
+        const newSet = { ...settings, [key]: val };
+        onSettingsChange(newSet);
+        try {
+          await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'settings', 'userSettings'), { [key]: val }, { merge: true });
+        } catch(e){ console.error(e); }
+      };
+
+      const toggleDay = (d) => {
+        updateSetting('reminderDays', { ...settings.reminderDays, [d]: !settings.reminderDays[d] });
+      };
+
+      const savePublicMsg = async () => {
+        setIsLoading(true);
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'publicMessages', userId), { message: myPublicMsg, updatedAt: serverTimestamp() }, { merge: true });
+        setIsLoading(false);
+      };
+
+      return (
+        <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-8 pb-24">
+          <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Projects</h2>
+            <form onSubmit={addProject} className="flex gap-2 mb-4">
+              <input type="text" value={newProj} onChange={e => setNewProj(e.target.value)} placeholder="New Project Name" className="flex-1 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button disabled={isLoading} className="bg-blue-600 text-white px-4 rounded-xl font-bold"><Icon name="Plus" /></button>
+            </form>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {projects.length === 0 && <p className="text-gray-400 text-sm">No projects.</p>}
+              {projects.map(p => (
+                <div key={p.id} className="p-3 bg-gray-50 rounded-lg text-sm font-medium text-gray-700 flex justify-between items-center group">
+                  <span>{p.name}</span>
+                  <button onClick={() => setProjectToDelete(p)} className="text-gray-300 hover:text-red-500 transition-colors p-1"><Icon name="Trash2" size={18}/></button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-yellow-50 rounded-lg"><Icon name="Bell" className="text-yellow-600"/></div>
+              <h2 className="text-lg font-bold text-gray-800">Reminders</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Time</label>
+                <input type="time" value={settings.reminderTime} onChange={e => updateSetting('reminderTime', e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl bg-white" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Days</label>
+                <div className="flex justify-between">
+                  {['sun','mon','tue','wed','thu','fri','sat'].map(d => (
+                    <button key={d} onClick={() => toggleDay(d)} className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${settings.reminderDays[d] ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-400'}`}>{d.charAt(0).toUpperCase()}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-gray-100 pt-4">
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Message Content</label>
+              <input type="text" value={settings.reminderMessage} onChange={e => updateSetting('reminderMessage', e.target.value)} disabled={!!settings.syncedFromUserId} className="w-full p-3 border border-gray-200 rounded-xl bg-white disabled:bg-gray-50 disabled:text-gray-400" />
+            </div>
+          </section>
+
+          <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-3 mb-5">
+               <div className="p-2 bg-green-50 rounded-lg"><Icon name="Refresh" className="text-green-600"/></div>
+               <h2 className="text-lg font-bold text-gray-800">Sync</h2>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-gray-700 mb-2">Your User ID</h3>
+              <p className="text-xs text-gray-500 mb-2">Share this ID to let friends receive your broadcast message.</p>
+              <div className="bg-gray-100 p-3 rounded-lg font-mono text-xs break-all text-gray-700 select-all">{userId}</div>
+            </div>
+
+            <div className="mb-6 pt-4 border-t border-gray-100">
+              <h3 className="text-sm font-bold text-gray-700 mb-2">Sync From Friend</h3>
+              <div className="flex gap-2">
+                <input type="text" value={syncId} onChange={e => setSyncId(e.target.value)} placeholder="Paste User ID here" className="flex-1 p-3 border border-gray-200 rounded-xl" />
+                <button onClick={() => { if(syncId) { updateSetting('syncedFromUserId', syncId); setSyncId(''); }}} className="bg-gray-800 text-white px-4 rounded-xl font-bold">Sync</button>
+              </div>
+              {settings.syncedFromUserId && (
+                <div className="mt-3 p-3 bg-blue-50 text-blue-700 text-sm rounded-xl flex justify-between items-center">
+                  <span className="truncate flex-1 mr-2">Syncing: {settings.syncedFromUserId}</span>
+                  <button onClick={() => updateSetting('syncedFromUserId', null)} className="p-1 hover:bg-blue-100 rounded"><Icon name="X" size={16}/></button>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-gray-100">
+              <h3 className="text-sm font-bold text-gray-700 mb-2">Broadcast Message</h3>
+              <textarea value={myPublicMsg} onChange={e => setMyPublicMsg(e.target.value)} placeholder="Type a message for your friends..." className="w-full p-3 border border-gray-200 rounded-xl mb-3 h-24 focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+              <button onClick={savePublicMsg} disabled={isLoading} className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl shadow-md shadow-purple-200">Update Public Message</button>
+            </div>
+          </section>
+          
+          {projectToDelete && <DeleteProjectModal project={projectToDelete} onClose={() => setProjectToDelete(null)} onConfirm={handleDeleteProject} />}
+        </div>
+      );
+    };
+
+    const App = () => {
+      const [page, setPage] = useState('log');
+      const [user, setUser] = useState(null);
+      const [ready, setReady] = useState(false);
+      const [projects, setProjects] = useState([]);
+      const [logs, setLogs] = useState([]);
+      const [settings, setSettings] = useState({ reminderTime: '09:00', reminderDays: {}, reminderMessage: "Log time!", syncedFromUserId: null });
+      const [pubMsg, setPubMsg] = useState('');
+
+      useEffect(() => {
+        onAuthStateChanged(auth, async u => {
+          if (u) { setUser(u); setReady(true); }
+          else {
+            try { 
+              if(initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+              else await signInAnonymously(auth);
+            } catch(e) { console.error(e); }
+          }
+        });
+      }, []);
+
+      useEffect(() => {
+        if(!ready || !user) return;
+        const uid = user.uid;
+        
+        const unsubP = onSnapshot(query(collection(db, 'artifacts', appId, 'users', uid, 'projects')), s => {
+          setProjects(s.docs.map(d => ({id: d.id, ...d.data()})));
+        });
+        
+        const unsubL = onSnapshot(query(collection(db, 'artifacts', appId, 'users', uid, 'timeLogs')), s => {
+          setLogs(s.docs.map(d => ({id: d.id, ...d.data()})));
+        });
+        
+        const unsubS = onSnapshot(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'userSettings'), d => {
+          if(d.exists()) setSettings(prev => ({...prev, ...d.data()}));
+          else setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'userSettings'), settings, {merge:true});
+        });
+
+        const unsubPub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'publicMessages', uid), d => {
+          if(d.exists()) setPubMsg(d.data().message);
+        });
+
+        return () => { unsubP(); unsubL(); unsubS(); unsubPub(); };
+      }, [ready, user]);
+
+      // Sync Listener
+      useEffect(() => {
+        if(!ready || !settings.syncedFromUserId) return;
+        const unsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'publicMessages', settings.syncedFromUserId), async d => {
+          if(d.exists()) {
+            const msg = d.data().message;
+            if (msg !== settings.reminderMessage) {
+               setSettings(prev => ({...prev, reminderMessage: msg}));
+               if(user) await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'userSettings'), { reminderMessage: msg }, {merge:true});
+            }
+          }
+        });
+        return () => unsub();
+      }, [ready, settings.syncedFromUserId, user]);
+
+      if(!ready) return <div className="h-screen flex items-center justify-center text-gray-400">Loading...</div>;
+
+      return (
+        <div className="font-sans text-gray-900 pb-10">
+          <Header currentPage={page} onNavClick={setPage} />
+          <main>
+            {page === 'log' && <LogPage logs={logs} projects={projects} userId={user.uid} />}
+            {page === 'stats' && <StatsPage logs={logs} projects={projects} />}
+            {page === 'admin' && <AdminPage projects={projects} settings={settings} userId={user.uid} onSettingsChange={setSettings} publicMessage={pubMsg} />}
+          </main>
+        </div>
+      );
+    };
+
+    createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
