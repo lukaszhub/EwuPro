@@ -81,7 +81,7 @@
 
     // --- FIREBASE CONFIGURATION (IMPORTANT) ---
     // You MUST replace the object below with your actual Firebase config from the Firebase Console.
-const YOUR_FIREBASE_CONFIG = {
+    const YOUR_FIREBASE_CONFIG = {
       apiKey: "PASTE_YOUR_API_KEY_HERE",
       authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
       projectId: "PASTE_YOUR_PROJECT_ID_HERE",
@@ -1015,16 +1015,28 @@ const YOUR_FIREBASE_CONFIG = {
       const [logs, setLogs] = useState([]);
       const [settings, setSettings] = useState({ reminderTime: '09:00', reminderDays: {}, reminderMessage: "Log time!", syncedFromUserId: null });
       const [pubMsg, setPubMsg] = useState('');
+      const [error, setError] = useState(null);
 
       useEffect(() => {
         onAuthStateChanged(auth, async u => {
-          if (u) { setUser(u); setReady(true); }
+          if (u) { 
+            setUser(u); 
+            setReady(true); 
+          }
           else {
             try { 
               if(initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
               else await signInAnonymously(auth);
-            } catch(e) { console.error(e); }
+            } catch(e) { 
+              console.error("Auth error:", e);
+              setError(e.message);
+              setReady(true);
+            }
           }
+        }, (err) => {
+           console.error("Auth observer error:", err);
+           setError(err.message);
+           setReady(true);
         });
       }, []);
 
@@ -1067,7 +1079,49 @@ const YOUR_FIREBASE_CONFIG = {
         return () => unsub();
       }, [ready, settings.syncedFromUserId, user]);
 
-      if(!ready) return <div className="h-screen flex items-center justify-center text-gray-400">Loading...</div>;
+      // Helper to check for config placeholder strings
+      const isConfigValid = useMemo(() => {
+         if (firebaseConfig.apiKey && firebaseConfig.apiKey.includes("PASTE_YOUR")) return false;
+         return true;
+      }, []);
+
+      if (error) {
+        return (
+            <div className="h-screen flex flex-col items-center justify-center text-red-600 p-4 text-center">
+                <Icon name="AlertTriangle" size={48} />
+                <h2 className="text-xl font-bold mt-4">Connection Error</h2>
+                <p className="mt-2 text-sm bg-red-50 p-2 rounded border border-red-100">{error}</p>
+                <div className="mt-6 text-gray-600 text-sm text-left max-w-xs mx-auto">
+                    <p className="font-bold mb-2">Troubleshooting:</p>
+                    <ul className="list-decimal pl-5 space-y-1">
+                      <li>Check your internet connection.</li>
+                      <li>Go to Firebase Console -> Authentication -> Sign-in method -> Enable <strong>Anonymous</strong>.</li>
+                      <li>Verify your Firebase Config in <code>index.html</code>.</li>
+                    </ul>
+                </div>
+            </div>
+        );
+      }
+
+      if (!isConfigValid) {
+        return (
+            <div className="h-screen flex flex-col items-center justify-center text-gray-800 p-6 text-center">
+                <Icon name="Settings" size={48} className="text-blue-500 mb-4" />
+                <h2 className="text-2xl font-bold mb-2">Configuration Missing</h2>
+                <p className="mb-6">You haven't pasted your Firebase configuration yet.</p>
+                <div className="text-left bg-gray-100 p-4 rounded-lg text-sm font-mono overflow-x-auto w-full max-w-md border border-gray-200">
+                  <p className="text-gray-500 mb-2">// Find this section in index.html:</p>
+                  <p className="text-blue-600">const YOUR_FIREBASE_CONFIG = &#123;</p>
+                  <p className="pl-4 text-green-600">apiKey: "PASTE_YOUR_API_KEY_HERE",</p>
+                  <p className="pl-4 text-gray-400">...</p>
+                  <p className="text-blue-600">&#125;;</p>
+                </div>
+                <p className="mt-6 text-sm text-gray-500">Replace the placeholder strings with your actual keys from the Firebase Console.</p>
+            </div>
+        );
+      }
+
+      if(!ready) return <div className="h-screen flex items-center justify-center text-gray-400 animate-pulse">Loading App...</div>;
 
       return (
         <div className="font-sans text-gray-900 pb-10">
