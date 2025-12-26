@@ -668,7 +668,7 @@
               createdAt: serverTimestamp()
             });
             triggerSuccess();
-          } catch(e) { console.error(e); }
+          } catch(e) { console.error(e); alert(e.message); }
         }
         setSearch('');
         setIsSearchFocused(false);
@@ -691,8 +691,8 @@
             });
           
           triggerSuccess();
-        } catch(e) { console.error(e); }
-        setIsNewProjectModalOpen(false);
+        } catch(e) { console.error(e); alert(e.message); }
+        // Modal closes itself via onClose prop in NewProjectModal handleSave
         setSearch(''); // clear search
       }
 
@@ -781,7 +781,7 @@
           </div>
 
           {showSuccess && (
-            <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-fade-in-up z-50">
+            <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-fade-in-up z-[100]">
               <Icon name="Check" size={18} className="text-green-400"/>
               <span className="font-medium text-sm">Log Added!</span>
             </div>
