@@ -677,6 +677,9 @@
       const handleQuickAddProject = async (name, totalMinutes, date) => {
         if(!userId) return;
         try {
+          const validDate = date || getLocalDateStr(); // Fallback to today if date is missing
+          const safeTotal = typeof totalMinutes === 'number' ? totalMinutes : 0;
+
           const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { 
             name: name.trim(), 
             createdAt: serverTimestamp() 
@@ -685,8 +688,8 @@
           await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), {
               projectId: docRef.id,
               projectName: name.trim(),
-              date: date,
-              totalMinutes: totalMinutes,
+              date: validDate,
+              totalMinutes: safeTotal,
               createdAt: serverTimestamp()
             });
           
