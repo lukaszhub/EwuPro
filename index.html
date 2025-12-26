@@ -23,11 +23,16 @@
           },
           animation: {
             'fade-in-up': 'fadeInUp 0.3s ease-out forwards',
+            'fade-in': 'fadeIn 0.2s ease-out forwards',
           },
           keyframes: {
             fadeInUp: {
               '0%': { opacity: '0', transform: 'translateY(10px)' },
               '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
             }
           }
         },
@@ -45,19 +50,12 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
-    /* Custom scrollbar for desktop */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
     ::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
     
-    /* Hide native date picker icon */
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      display: none;
-      -webkit-appearance: none;
-    }
-    
-    /* Mobile tap highlight fix */
+    input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
     * { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
@@ -68,16 +66,15 @@
   <!-- 5. Firebase JS SDKs -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
       getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, 
       onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp,
       setLogLevel, enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     
-    // Make Firebase available to React
     window.firebase = {
-      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence,
+      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
       getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
       onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, setLogLevel, enableIndexedDbPersistence
     };
@@ -100,17 +97,13 @@
     };
 
     // --- App Logic Starts Here ---
-    
     const {
-      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence,
+      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
       getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
       onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, setLogLevel, enableIndexedDbPersistence
     } = window.firebase;
 
-    const firebaseConfig = (typeof __firebase_config !== 'undefined') 
-      ? JSON.parse(__firebase_config) 
-      : YOUR_FIREBASE_CONFIG;
-      
+    const firebaseConfig = (typeof __firebase_config !== 'undefined') ? JSON.parse(__firebase_config) : YOUR_FIREBASE_CONFIG;
     const appId = (typeof __app_id !== 'undefined') ? __app_id : 'ewupro-app';
     const initialAuthToken = (typeof __initial_auth_token !== 'undefined') ? __initial_auth_token : null;
 
@@ -119,21 +112,9 @@
       app = initializeApp(firebaseConfig);
       db = getFirestore(app);
       auth = getAuth(app);
-      
-      // Enable offline persistence
-      enableIndexedDbPersistence(db).catch((err) => {
-          if (err.code == 'failed-precondition') {
-              console.log('Persistence failed: Multiple tabs open');
-          } else if (err.code == 'unimplemented') {
-              console.log('Persistence failed: Browser not supported');
-          }
-      });
-      
-    } catch (e) {
-      console.error("Firebase Init Error", e);
-    }
+      enableIndexedDbPersistence(db).catch(err => console.log('Persistence:', err.code));
+    } catch (e) { console.error("Firebase Init Error", e); }
 
-    // --- Helper: Local Date String (YYYY-MM-DD) ---
     const getLocalDateStr = (date = new Date()) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -168,11 +149,11 @@
       return <span className={className}>{icons[name] || null}</span>;
     };
 
-    // --- Formatters ---
     const formatTime = (totalMinutes) => {
-      if (isNaN(totalMinutes) || totalMinutes === 0) return '0m';
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
+      const t = Number(totalMinutes);
+      if (isNaN(t) || t === 0) return '0m';
+      const hours = Math.floor(t / 60);
+      const minutes = t % 60;
       let str = '';
       if (hours > 0) str += `${hours}h `;
       if (minutes > 0) str += `${minutes}m`;
@@ -192,33 +173,18 @@
       return date.toLocaleString('default', { month: 'long', year: 'numeric' });
     };
 
-    // --- COMPONENTS ---
-
     const Header = ({ currentPage, onNavClick }) => {
-      const navButton = (page, icon, label) => {
-        const isActive = currentPage === page;
-        return (
-          <button
-            onClick={() => onNavClick(page)}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-4 py-2 rounded-lg transition-all active:scale-95 ${
-              isActive ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <Icon name={icon} size={20} />
-            <span className="text-xs sm:text-base font-medium hidden sm:inline">{label}</span>
-          </button>
-        );
-      };
-
+      const navButton = (page, icon, label) => (
+        <button onClick={() => onNavClick(page)} className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-4 py-2 rounded-lg transition-all active:scale-95 ${currentPage === page ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+          <Icon name={icon} size={20} />
+          <span className="text-xs sm:text-base font-medium hidden sm:inline">{label}</span>
+        </button>
+      );
       return (
         <header className="bg-white shadow-sm sticky top-0 z-40">
           <div className="max-w-3xl mx-auto p-3 sm:p-4 flex justify-between items-center">
             <h1 className="text-xl sm:text-2xl font-bold text-blue-700 tracking-tight">EwuPro</h1>
-            <nav className="flex gap-2">
-              {navButton('log', 'Home', 'Home')}
-              {navButton('stats', 'BarChart2', 'Stats')}
-              {navButton('admin', 'Settings', 'Admin')}
-            </nav>
+            <nav className="flex gap-2">{navButton('log', 'Home', 'Home')}{navButton('stats', 'BarChart2', 'Stats')}{navButton('admin', 'Settings', 'Admin')}</nav>
           </div>
         </header>
       );
@@ -227,64 +193,38 @@
     const TimePickerModal = ({ log, onClose, onSave }) => {
       const [hours, setHours] = useState(Math.floor(log.totalMinutes / 60));
       const [minutes, setMinutes] = useState(log.totalMinutes % 60);
-      const [date, setDate] = useState(log.date); // Initialize with log date
-      const [view, setView] = useState('time'); // 'time' or 'date'
-
-      // --- Calendar Logic Embedded for Mode Switching ---
+      const [date, setDate] = useState(log.date);
+      const [view, setView] = useState('time');
       const [currentMonth, setCurrentMonth] = useState(() => {
         const [y, m, d] = log.date.split('-').map(Number);
         return new Date(y, m - 1, 1);
       });
 
       const getDaysInMonth = (d) => {
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const firstDay = new Date(y, m, 1).getDay();
-        const daysInMonth = new Date(y, m + 1, 0).getDate();
-        let days = [];
-        for (let i = 0; i < firstDay; i++) days.push(null);
-        for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i));
-        return days;
+        const y = d.getFullYear(); const m = d.getMonth(); const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
+        let days = []; for (let i = 0; i < firstDay; i++) days.push(null); for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i)); return days;
       };
-
-      const changeMonth = (offset) => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
-      };
-
-      const handleDayClick = (d) => {
-        if (!d) return;
-        setDate(getLocalDateStr(d));
-        setView('time'); // Switch back to time view after selecting date
-      };
-
+      const changeMonth = (offset) => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
+      const handleDayClick = (d) => { if (!d) return; setDate(getLocalDateStr(d)); setView('time'); };
       const days = getDaysInMonth(currentMonth);
       const isSelected = (d) => d && getLocalDateStr(d) === date;
       const isToday = (d) => d && getLocalDateStr(d) === getLocalDateStr(new Date());
 
       const handleSave = () => {
-        const total = (parseInt(hours) * 60) + parseInt(minutes);
-        onSave(total, date); // Pass date back
+        const total = (Number(hours) * 60) + Number(minutes);
+        onSave(total, date);
         onClose();
       };
 
       return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-[fadeIn_0.2s_ease-out]">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[5000] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-fade-in">
             <h3 className="text-xl font-bold text-gray-800 text-center mb-2">{log.projectName}</h3>
-            
-            {/* Date Toggle Header */}
             <div className="flex justify-center mb-6">
-              <button 
-                type="button"
-                onClick={() => setView(view === 'time' ? 'date' : 'time')}
-                className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
-              >
-                <Icon name="Calendar" size={16} />
-                {formatDateDisplay(date)}
-                <Icon name={view === 'time' ? 'ChevronRight' : 'ChevronDown'} size={14} />
+              <button type="button" onClick={() => setView(view === 'time' ? 'date' : 'time')} className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
+                <Icon name="Calendar" size={16} /> {formatDateDisplay(date)} <Icon name={view === 'time' ? 'ChevronRight' : 'ChevronDown'} size={14} />
               </button>
             </div>
-
             {view === 'time' ? (
               <>
                 <div className="flex justify-center gap-4 mb-8">
@@ -307,26 +247,16 @@
                 </div>
               </>
             ) : (
-              <div className="animate-[fadeIn_0.2s_ease-out]">
+              <div className="animate-fade-in">
                 <div className="flex justify-between items-center mb-4">
                   <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
                   <h3 className="text-md font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
                   <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
                 </div>
-                <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                  {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
-                </div>
+                <div className="grid grid-cols-7 gap-1 text-center mb-2"> {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)} </div>
                 <div className="grid grid-cols-7 gap-1">
                   {days.map((d, i) => (
-                    <button 
-                      type="button"
-                      key={i} 
-                      disabled={!d} 
-                      onClick={() => handleDayClick(d)}
-                      className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                        !d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'
-                      }`}
-                    >
+                    <button type="button" key={i} disabled={!d} onClick={() => handleDayClick(d)} className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${!d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'}`}>
                       {d ? d.getDate() : ''}
                     </button>
                   ))}
@@ -342,55 +272,28 @@
     const DatePickerModal = ({ selectedDate, onClose, onSave }) => {
       const [year, month, day] = selectedDate.split('-').map(Number);
       const [currentMonth, setCurrentMonth] = useState(new Date(year, month - 1, 1));
-
       const getDaysInMonth = (date) => {
-        const y = date.getFullYear();
-        const m = date.getMonth();
-        const firstDay = new Date(y, m, 1).getDay();
-        const daysInMonth = new Date(y, m + 1, 0).getDate();
-        let days = [];
-        for (let i = 0; i < firstDay; i++) days.push(null);
-        for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i));
-        return days;
+        const y = date.getFullYear(); const m = date.getMonth(); const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
+        let days = []; for (let i = 0; i < firstDay; i++) days.push(null); for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i)); return days;
       };
-
+      const changeMonth = (offset) => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
+      const handleDayClick = (d) => { if (!d) return; onSave(getLocalDateStr(d)); onClose(); };
       const days = getDaysInMonth(currentMonth);
-
-      const changeMonth = (offset) => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
-      };
-
-      const handleDayClick = (d) => {
-        if (!d) return;
-        onSave(getLocalDateStr(d));
-        onClose();
-      };
-
       const isSelected = (d) => d && getLocalDateStr(d) === selectedDate;
       const isToday = (d) => d && getLocalDateStr(d) === getLocalDateStr(new Date());
 
       return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[5000] p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
             <div className="flex justify-between items-center mb-6">
               <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
               <h3 className="text-lg font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
               <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center mb-2">
-              {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
-            </div>
+            <div className="grid grid-cols-7 gap-1 text-center mb-2"> {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)} </div>
             <div className="grid grid-cols-7 gap-1">
               {days.map((d, i) => (
-                <button 
-                  type="button"
-                  key={i} 
-                  disabled={!d} 
-                  onClick={() => handleDayClick(d)}
-                  className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                    !d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-                >
+                <button type="button" key={i} disabled={!d} onClick={() => handleDayClick(d)} className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${!d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'}`}>
                   {d ? d.getDate() : ''}
                 </button>
               ))}
@@ -402,16 +305,14 @@
     };
 
     const DeleteConfirmationModal = ({ log, onClose, onConfirm }) => (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[5000] p-4">
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="AlertTriangle" size={32} className="text-red-500" />
-          </div>
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4"><Icon name="AlertTriangle" size={32} className="text-red-500" /></div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Entry?</h3>
           <p className="text-gray-500 mb-6">Are you sure you want to delete <strong className="text-gray-800">{log.projectName}</strong> for {formatDateDisplay(log.date)}?</p>
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
-            <button type="button" onClick={() => { onConfirm(log.id); onClose(); }} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete</button>
+            <button type="button" onClick={() => { onClose(); onConfirm(log.id); }} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete</button>
           </div>
         </div>
       </div>
@@ -424,31 +325,11 @@
       const [date, setDate] = useState(getLocalDateStr()); 
       const [view, setView] = useState('time'); 
       const [confirmedDuplicate, setConfirmedDuplicate] = useState(false);
-
-      // Calendar Logic
       const [currentMonth, setCurrentMonth] = useState(new Date());
 
-      const getDaysInMonth = (d) => {
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const firstDay = new Date(y, m, 1).getDay();
-        const daysInMonth = new Date(y, m + 1, 0).getDate();
-        let days = [];
-        for (let i = 0; i < firstDay; i++) days.push(null);
-        for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i));
-        return days;
-      };
-
-      const changeMonth = (offset) => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
-      };
-
-      const handleDayClick = (d) => {
-        if (!d) return;
-        setDate(getLocalDateStr(d));
-        setView('time');
-      };
-
+      const getDaysInMonth = (d) => { const y = d.getFullYear(); const m = d.getMonth(); const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate(); let days = []; for (let i = 0; i < firstDay; i++) days.push(null); for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i)); return days; };
+      const changeMonth = (offset) => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
+      const handleDayClick = (d) => { if (!d) return; setDate(getLocalDateStr(d)); setView('time'); };
       const days = getDaysInMonth(currentMonth);
       const isSelected = (d) => d && getLocalDateStr(d) === date;
       const isToday = (d) => d && getLocalDateStr(d) === getLocalDateStr(new Date());
@@ -456,74 +337,34 @@
       const handleSave = () => {
         const cleanName = name.trim();
         if (!cleanName) return;
-
-        // Duplicate Check Logic
         const normalize = s => s.replace(/\s+/g, '').toLowerCase();
         const isDuplicate = projects.some(p => normalize(p.name) === normalize(cleanName));
-
-        if (isDuplicate && !confirmedDuplicate) {
-            setConfirmedDuplicate(true);
-            return;
-        }
-
-        const total = (parseInt(hours) * 60) + parseInt(minutes);
+        if (isDuplicate && !confirmedDuplicate) { setConfirmedDuplicate(true); return; }
+        const total = (Number(hours) * 60) + Number(minutes);
+        onClose(); // CLOSE IMMEDIATELY (Optimistic UI)
         onSave(cleanName, total, date);
-        onClose(); // Close immediately
       }
-
-      const handleNameChange = (e) => {
-        setName(e.target.value);
-        if (confirmedDuplicate) setConfirmedDuplicate(false); // Reset warning on change
-      }
+      const handleNameChange = (e) => { setName(e.target.value); if (confirmedDuplicate) setConfirmedDuplicate(false); }
 
       return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-[fadeIn_0.2s_ease-out]">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[5000] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-fade-in">
             <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">New Project</h3>
-            
-            <input 
-              type="text" 
-              placeholder="Project Name" 
-              value={name} 
-              onChange={handleNameChange} 
-              className={`w-full p-3 border rounded-xl mb-2 focus:outline-none focus:ring-2 font-medium ${confirmedDuplicate ? 'border-red-300 ring-red-200' : 'border-gray-200 focus:ring-blue-500'}`}
-            />
-            
-            {confirmedDuplicate && (
-              <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center font-medium animate-[pulse_2s_infinite]">
-                Project name already exists. Create anyway?
-              </div>
-            )}
-
-            {!confirmedDuplicate && <div className="mb-4"></div>}
-
-            {/* Date Toggle */}
+            <input type="text" placeholder="Project Name" value={name} onChange={handleNameChange} className={`w-full p-3 border rounded-xl mb-2 focus:outline-none focus:ring-2 font-medium ${confirmedDuplicate ? 'border-red-300 ring-red-200' : 'border-gray-200 focus:ring-blue-500'}`} />
+            {confirmedDuplicate ? <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center font-medium animate-pulse">Project name already exists. Create anyway?</div> : <div className="mb-4"></div>}
             <div className="flex justify-center mb-6">
-              <button 
-                type="button"
-                onClick={() => setView(view === 'time' ? 'date' : 'time')}
-                className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
-              >
-                <Icon name="Calendar" size={16} />
-                {formatDateDisplay(date)}
-                <Icon name={view === 'time' ? 'ChevronRight' : 'ChevronDown'} size={14} />
-              </button>
+              <button type="button" onClick={() => setView(view === 'time' ? 'date' : 'time')} className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"><Icon name="Calendar" size={16} /> {formatDateDisplay(date)} <Icon name={view === 'time' ? 'ChevronRight' : 'ChevronDown'} size={14} /></button>
             </div>
-
             {view === 'time' ? (
               <>
                 <div className="flex justify-center gap-4 mb-8">
                   <div className="flex-1 text-center">
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Hours</label>
-                    <select value={hours} onChange={(e) => setHours(e.target.value)} className="w-full text-3xl font-bold text-center p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 outline-none">
-                      {[...Array(24).keys()].map(h => <option key={h} value={h}>{h}</option>)}
-                    </select>
+                    <select value={hours} onChange={(e) => setHours(e.target.value)} className="w-full text-3xl font-bold text-center p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 outline-none">{[...Array(24).keys()].map(h => <option key={h} value={h}>{h}</option>)}</select>
                   </div>
                   <div className="flex-1 text-center">
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Minutes</label>
-                    <select value={minutes} onChange={(e) => setMinutes(e.target.value)} className="w-full text-3xl font-bold text-center p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 outline-none">
-                      {[0, 15, 30, 45].map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
+                    <select value={minutes} onChange={(e) => setMinutes(e.target.value)} className="w-full text-3xl font-bold text-center p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 outline-none">{[0, 15, 30, 45].map(m => <option key={m} value={m}>{m}</option>)}</select>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -532,30 +373,14 @@
                 </div>
               </>
             ) : (
-              <div className="animate-[fadeIn_0.2s_ease-out]">
+              <div className="animate-fade-in">
                 <div className="flex justify-between items-center mb-4">
                   <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
                   <h3 className="text-md font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
                   <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
                 </div>
-                <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                  {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
-                </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {days.map((d, i) => (
-                    <button 
-                      type="button"
-                      key={i} 
-                      disabled={!d} 
-                      onClick={() => handleDayClick(d)}
-                      className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                        !d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {d ? d.getDate() : ''}
-                    </button>
-                  ))}
-                </div>
+                <div className="grid grid-cols-7 gap-1 text-center mb-2">{['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}</div>
+                <div className="grid grid-cols-7 gap-1">{days.map((d, i) => (<button type="button" key={i} disabled={!d} onClick={() => handleDayClick(d)} className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${!d ? '' : isSelected(d) ? 'bg-blue-600 text-white shadow-md' : isToday(d) ? 'bg-blue-50 text-blue-600 font-bold' : 'hover:bg-gray-100 text-gray-700'}`}>{d ? d.getDate() : ''}</button>))}</div>
                 <button type="button" onClick={() => setView('time')} className="w-full mt-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm">Cancel Date Change</button>
               </div>
             )}
@@ -565,17 +390,15 @@
     }
 
     const DeleteProjectModal = ({ project, onClose, onConfirm }) => (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[5000] p-4">
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="AlertTriangle" size={32} className="text-red-500" />
-          </div>
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4"><Icon name="AlertTriangle" size={32} className="text-red-500" /></div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Project?</h3>
           <p className="text-gray-600 mb-2">Are you sure you want to delete <strong className="text-gray-900">{project.name}</strong>?</p>
           <p className="text-red-600 font-bold text-sm mb-6 bg-red-50 p-2 rounded">Warning: This will also delete ALL time logs associated with this project. This cannot be undone.</p>
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
-            <button type="button" onClick={() => { onConfirm(project); onClose(); }} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete All</button>
+            <button type="button" onClick={() => { onClose(); onConfirm(project); }} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete All</button>
           </div>
         </div>
       </div>
@@ -584,21 +407,12 @@
     const CsvExportModal = ({ csvData, onClose }) => {
       const [status, setStatus] = useState('Copy to Clipboard');
       const textAreaRef = useRef(null);
-
       const copyToClipboard = async () => {
-        try {
-          await navigator.clipboard.writeText(csvData);
-          setStatus("Copied!");
-        } catch (err) {
-          textAreaRef.current.select();
-          document.execCommand('copy');
-          setStatus("Copied!");
-        }
+        try { await navigator.clipboard.writeText(csvData); setStatus("Copied!"); } catch (err) { textAreaRef.current.select(); document.execCommand('copy'); setStatus("Copied!"); }
         setTimeout(() => setStatus('Copy to Clipboard'), 2000);
       };
-
       return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[5000] p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Export Data</h3>
             <p className="text-sm text-gray-500 mb-4">Direct share unavailable. Copy the data below:</p>
@@ -623,113 +437,65 @@
       const [logToEditDate, setLogToEditDate] = useState(null);
       const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
       const [showSuccess, setShowSuccess] = useState(false);
-      
       const logsCollection = collection(db, 'artifacts', appId, 'users', userId, 'timeLogs');
 
       const groupedLogs = useMemo(() => {
         const groups = {};
         [...logs].sort((a, b) => b.date.localeCompare(a.date)).forEach(log => {
-          const mY = getMonthYear(log.date);
-          if (!groups[mY]) groups[mY] = [];
-          groups[mY].push(log);
+          const mY = getMonthYear(log.date); if (!groups[mY]) groups[mY] = []; groups[mY].push(log);
         });
         return groups;
       }, [logs]);
 
       useEffect(() => {
-        if (!isSearchFocused && !search) {
-          setFilteredProjects([]);
-          return;
-        }
+        if (!isSearchFocused && !search) { setFilteredProjects([]); return; }
         const sorted = [...projects].sort((a, b) => a.name.localeCompare(b.name));
         if (!search) setFilteredProjects(sorted);
         else setFilteredProjects(sorted.filter(p => p.name.toLowerCase().includes(search.toLowerCase())));
       }, [search, projects, isSearchFocused]);
 
-      const triggerSuccess = () => {
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 2000);
-      }
+      const triggerSuccess = () => { setShowSuccess(true); setTimeout(() => setShowSuccess(false), 2000); }
 
       const handleAddLog = async (project) => {
         if(!userId) return;
         const todayStr = getLocalDateStr();
         const existing = logs.find(l => l.date === todayStr && l.projectId === project.id);
-        
-        if (existing) {
-          setSelectedLog(existing);
-        } else {
+        if (existing) { setSelectedLog(existing); } else {
           try {
-            await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), {
-              projectId: project.id,
-              projectName: project.name,
-              date: todayStr,
-              totalMinutes: 0,
-              createdAt: serverTimestamp()
-            });
+            await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), { projectId: project.id, projectName: project.name, date: todayStr, totalMinutes: 0, createdAt: serverTimestamp() });
             triggerSuccess();
           } catch(e) { console.error(e); alert(e.message); }
         }
-        setSearch('');
-        setIsSearchFocused(false);
+        setSearch(''); setIsSearchFocused(false);
       };
 
       const handleQuickAddProject = async (name, totalMinutes, date) => {
         if(!userId) return;
         try {
-          const validDate = date || getLocalDateStr(); // Fallback to today if date is missing
-          const safeTotal = typeof totalMinutes === 'number' ? totalMinutes : 0;
-
-          const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { 
-            name: name.trim(), 
-            createdAt: serverTimestamp() 
-          });
-          
-          await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), {
-              projectId: docRef.id,
-              projectName: name.trim(),
-              date: validDate,
-              totalMinutes: safeTotal,
-              createdAt: serverTimestamp()
-            });
-          
+          // Force numbers to prevent NaN
+          const safeTotal = Number(totalMinutes) || 0;
+          const safeDate = date || getLocalDateStr();
+          const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { name: name.trim(), createdAt: serverTimestamp() });
+          await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), { projectId: docRef.id, projectName: name.trim(), date: safeDate, totalMinutes: safeTotal, createdAt: serverTimestamp() });
           triggerSuccess();
         } catch(e) { console.error(e); alert(e.message); }
-        // Modal closes itself via onClose prop in NewProjectModal handleSave
-        setSearch(''); // clear search
+        setSearch('');
       }
 
-      const handleTimeSave = async (total, newDate) => {
-        if(selectedLog) await updateDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', selectedLog.id), { totalMinutes: total, date: newDate || selectedLog.date });
-      };
-      
-      const handleDateSave = async (d) => {
-        if(logToEditDate) await updateDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', logToEditDate.id), { date: d });
-      };
-      
-      const handleDelete = async (id) => {
-        await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', id));
-        setLogToDelete(null);
-      };
+      const handleTimeSave = async (total, newDate) => { if(selectedLog) await updateDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', selectedLog.id), { totalMinutes: total, date: newDate || selectedLog.date }); };
+      const handleDateSave = async (d) => { if(logToEditDate) await updateDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', logToEditDate.id), { date: d }); };
+      const handleDelete = async (id) => { await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', id)); setLogToDelete(null); };
 
       return (
         <div className="max-w-3xl mx-auto p-4 md:p-6 pb-24 relative">
           <div className="relative z-30 mb-6">
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <input type="text" placeholder="Search project..." value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                  className="w-full p-4 pl-12 text-lg rounded-2xl shadow-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <input type="text" placeholder="Search project..." value={search} onChange={e => setSearch(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full p-4 pl-12 text-lg rounded-2xl shadow-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Icon name="Search" /></span>
               </div>
-              <button onClick={() => setIsNewProjectModalOpen(true)} className="p-4 bg-blue-600 text-white rounded-2xl shadow-sm hover:bg-blue-700 active:scale-95 transition-all">
-                <Icon name="Plus" />
-              </button>
+              <button onClick={() => setIsNewProjectModalOpen(true)} className="p-4 bg-blue-600 text-white rounded-2xl shadow-sm hover:bg-blue-700 active:scale-95 transition-all"><Icon name="Plus" /></button>
             </div>
-            
             {isSearchFocused && (
               <ul className="absolute w-full bg-white rounded-2xl shadow-xl mt-2 max-h-60 overflow-y-auto border border-gray-100 z-50">
                 {filteredProjects.length > 0 ? filteredProjects.map(p => (
@@ -743,7 +509,6 @@
               </ul>
             )}
           </div>
-
           <div className="space-y-8">
             {Object.keys(groupedLogs).length === 0 && <div className="text-center py-10 text-gray-400">No logs yet.</div>}
             {Object.keys(groupedLogs).map(mY => (
@@ -753,26 +518,15 @@
                   {groupedLogs[mY].map((log, idx) => {
                     const prevLog = groupedLogs[mY][idx - 1];
                     const showDate = !prevLog || prevLog.date !== log.date;
-                    
                     return (
                       <div key={log.id}>
-                        {showDate && (
-                          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4 ml-1">
-                            {formatDateDisplay(log.date)}
-                          </div>
-                        )}
+                        {showDate && <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4 ml-1">{formatDateDisplay(log.date)}</div>}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <span className="text-base font-semibold text-gray-800">{log.projectName}</span>
                           <div className="flex gap-2 self-end sm:self-auto w-full sm:w-auto">
-                            <button onClick={() => setSelectedLog(log)} className="flex-1 sm:flex-none flex items-center justify-center gap-1 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-bold text-sm">
-                              <Icon name="Clock" size={16} /> {formatTime(log.totalMinutes)}
-                            </button>
-                            <button onClick={() => setLogToEditDate(log)} className="flex-1 sm:flex-none flex items-center justify-center bg-gray-50 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium">
-                              {log.date.split('-')[2]}
-                            </button>
-                            <button onClick={() => setLogToDelete(log)} className="px-3 py-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100">
-                              <Icon name="Trash2" size={18} />
-                            </button>
+                            <button onClick={() => setSelectedLog(log)} className="flex-1 sm:flex-none flex items-center justify-center gap-1 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-bold text-sm"><Icon name="Clock" size={16} /> {formatTime(log.totalMinutes)}</button>
+                            <button onClick={() => setLogToEditDate(log)} className="flex-1 sm:flex-none flex items-center justify-center bg-gray-50 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium">{log.date.split('-')[2]}</button>
+                            <button onClick={() => setLogToDelete(log)} className="px-3 py-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><Icon name="Trash2" size={18} /></button>
                           </div>
                         </div>
                       </div>
@@ -782,14 +536,12 @@
               </section>
             ))}
           </div>
-
           {showSuccess && (
             <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-fade-in-up z-[100]">
               <Icon name="Check" size={18} className="text-green-400"/>
               <span className="font-medium text-sm">Log Added!</span>
             </div>
           )}
-
           {selectedLog && <TimePickerModal log={selectedLog} onClose={() => setSelectedLog(null)} onSave={handleTimeSave} />}
           {logToDelete && <DeleteConfirmationModal log={logToDelete} onClose={() => setLogToDelete(null)} onConfirm={handleDelete} />}
           {logToEditDate && <DatePickerModal selectedDate={logToEditDate.date} onClose={() => setLogToEditDate(null)} onSave={handleDateSave} />}
@@ -801,126 +553,48 @@
     const StatsPage = ({ logs, projects }) => {
       const [filterId, setFilterId] = useState('all');
       const [csvData, setCsvData] = useState(null);
-
       const filtered = useMemo(() => filterId === 'all' ? logs : logs.filter(l => l.projectId === filterId), [logs, filterId]);
-      
       const stats = useMemo(() => {
         const grandTotal = filtered.reduce((acc, l) => acc + l.totalMinutes, 0);
         const months = {};
-        
         filtered.forEach(l => {
-          const mY = getMonthYear(l.date);
-          if (!months[mY]) months[mY] = { total: 0, projects: {}, days: {} };
-          months[mY].total += l.totalMinutes;
-          
-          if (!months[mY].projects[l.projectName]) months[mY].projects[l.projectName] = 0;
-          months[mY].projects[l.projectName] += l.totalMinutes;
-          
-          if (!months[mY].days[l.date]) months[mY].days[l.date] = { total: 0, projects: {} };
-          months[mY].days[l.date].total += l.totalMinutes;
-          
-          if (!months[mY].days[l.date].projects[l.projectName]) months[mY].days[l.date].projects[l.projectName] = 0;
-          months[mY].days[l.date].projects[l.projectName] += l.totalMinutes;
+          const mY = getMonthYear(l.date); if (!months[mY]) months[mY] = { total: 0, projects: {}, days: {} }; months[mY].total += l.totalMinutes;
+          if (!months[mY].projects[l.projectName]) months[mY].projects[l.projectName] = 0; months[mY].projects[l.projectName] += l.totalMinutes;
+          if (!months[mY].days[l.date]) months[mY].days[l.date] = { total: 0, projects: {} }; months[mY].days[l.date].total += l.totalMinutes;
+          if (!months[mY].days[l.date].projects[l.projectName]) months[mY].days[l.date].projects[l.projectName] = 0; months[mY].days[l.date].projects[l.projectName] += l.totalMinutes;
         });
-        
         const sortedMonths = Object.keys(months).sort((a,b) => new Date(b) - new Date(a));
-        
         return { grandTotal, months, sortedMonths };
       }, [filtered]);
 
       const handleExport = async () => {
         let csv = "Date,Project,Hours,Minutes,Total Minutes\n";
-        filtered.forEach(l => {
-          const h = Math.floor(l.totalMinutes / 60);
-          const m = l.totalMinutes % 60;
-          csv += `${l.date},"${l.projectName}",${h},${m},${l.totalMinutes}\n`;
-        });
-        
+        filtered.forEach(l => { const h = Math.floor(l.totalMinutes / 60); const m = l.totalMinutes % 60; csv += `${l.date},"${l.projectName}",${h},${m},${l.totalMinutes}\n`; });
         const fileName = `ewupro_export_${getLocalDateStr()}.csv`;
         const file = new File([csv], fileName, { type: 'text/csv' });
-
-        try {
-          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'EwuPro Export' });
-            return;
-          }
-        } catch(e) {}
-        
+        try { if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'EwuPro Export' }); return; } } catch(e) {}
         const uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        const link = document.createElement('a');
-        link.href = uri;
-        link.download = fileName;
-        if(typeof window.orientation !== 'undefined') {
-           setCsvData(csv);
-        } else {
-           link.click();
-        }
+        const link = document.createElement('a'); link.href = uri; link.download = fileName;
+        if(typeof window.orientation !== 'undefined') { setCsvData(csv); } else { link.click(); }
       };
 
       return (
         <div className="max-w-3xl mx-auto p-4 md:p-6 pb-24">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Filter</label>
-                <select value={filterId} onChange={e => setFilterId(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="all">All Projects</option>
-                  {projects.sort((a,b)=>a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div className="sm:self-end">
-                <button onClick={handleExport} className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-bold rounded-xl shadow-md shadow-green-200 flex items-center justify-center gap-2">
-                  <Icon name="Download" size={20}/> Export
-                </button>
-              </div>
+              <div className="flex-1"><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Filter</label><select value={filterId} onChange={e => setFilterId(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="all">All Projects</option>{projects.sort((a,b)=>a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+              <div className="sm:self-end"><button onClick={handleExport} className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-bold rounded-xl shadow-md shadow-green-200 flex items-center justify-center gap-2"><Icon name="Download" size={20}/> Export</button></div>
             </div>
-            <div className="text-center p-6 bg-blue-50 rounded-xl border border-blue-100">
-              <div className="text-xs font-bold text-blue-500 uppercase tracking-wide">Total Time</div>
-              <div className="text-4xl font-extrabold text-blue-900 mt-1">{formatTime(stats.grandTotal)}</div>
-            </div>
+            <div className="text-center p-6 bg-blue-50 rounded-xl border border-blue-100"><div className="text-xs font-bold text-blue-500 uppercase tracking-wide">Total Time</div><div className="text-4xl font-extrabold text-blue-900 mt-1">{formatTime(stats.grandTotal)}</div></div>
           </div>
-
           <div className="space-y-6">
             {stats.sortedMonths.map(mY => {
               const mData = stats.months[mY];
               return (
                 <div key={mY} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800">{mY}</h3>
-                    <span className="font-bold text-blue-600">{formatTime(mData.total)}</span>
-                  </div>
-                  
-                  {filterId === 'all' && (
-                    <div className="p-4 border-b border-gray-100">
-                      <div className="text-xs font-bold text-gray-400 uppercase mb-2">Project Breakdown</div>
-                      {Object.keys(mData.projects).sort().map(p => (
-                        <div key={p} className="flex justify-between text-sm py-1">
-                          <span className="text-gray-600">{p}</span>
-                          <span className="font-medium text-gray-900">{formatTime(mData.projects[p])}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="p-4">
-                    <div className="text-xs font-bold text-gray-400 uppercase mb-3">Daily Log</div>
-                    <div className="space-y-3">
-                      {Object.keys(mData.days).sort((a,b) => b.localeCompare(a)).map(d => (
-                        <div key={d} className="bg-gray-50 p-3 rounded-lg">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="font-semibold text-gray-700">{formatDateDisplay(d)}</span>
-                            <span className="font-bold text-gray-900">{formatTime(mData.days[d].total)}</span>
-                          </div>
-                          {filterId === 'all' && Object.keys(mData.days[d].projects).map(p => (
-                            <div key={p} className="flex justify-between text-xs text-gray-500">
-                              <span>{p}</span>
-                              <span>{formatTime(mData.days[d].projects[p])}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <div className="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center"><h3 className="font-bold text-gray-800">{mY}</h3><span className="font-bold text-blue-600">{formatTime(mData.total)}</span></div>
+                  {filterId === 'all' && (<div className="p-4 border-b border-gray-100"><div className="text-xs font-bold text-gray-400 uppercase mb-2">Project Breakdown</div>{Object.keys(mData.projects).sort().map(p => (<div key={p} className="flex justify-between text-sm py-1"><span className="text-gray-600">{p}</span><span className="font-medium text-gray-900">{formatTime(mData.projects[p])}</span></div>))}</div>)}
+                  <div className="p-4"><div className="text-xs font-bold text-gray-400 uppercase mb-3">Daily Log</div><div className="space-y-3">{Object.keys(mData.days).sort((a,b) => b.localeCompare(a)).map(d => (<div key={d} className="bg-gray-50 p-3 rounded-lg"><div className="flex justify-between items-center mb-1"><span className="font-semibold text-gray-700">{formatDateDisplay(d)}</span><span className="font-bold text-gray-900">{formatTime(mData.days[d].total)}</span></div>{filterId === 'all' && Object.keys(mData.days[d].projects).map(p => (<div key={p} className="flex justify-between text-xs text-gray-500"><span>{p}</span><span>{formatTime(mData.days[d].projects[p])}</span></div>))}</div>))}</div></div>
                 </div>
               )
             })}
@@ -940,53 +614,29 @@
       useEffect(() => { setMyPublicMsg(publicMessage || ''); }, [publicMessage]);
 
       const addProject = async (e) => {
-        e.preventDefault();
-        if(!newProj.trim()) return;
-        setIsLoading(true);
-        try {
-          await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { name: newProj.trim(), createdAt: serverTimestamp() });
-          setNewProj('');
-        } catch(e){ console.error(e); }
+        e.preventDefault(); if(!newProj.trim()) return; setIsLoading(true);
+        try { await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { name: newProj.trim(), createdAt: serverTimestamp() }); setNewProj(''); } catch(e){ console.error(e); }
         setIsLoading(false);
       };
-
       const handleDeleteProject = async (project) => {
         setIsLoading(true);
         try {
-          // 1. Get all logs for this project
           const logsQuery = query(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), where('projectId', '==', project.id));
           const logsSnapshot = await getDocs(logsQuery);
-
-          // 2. Delete logs in batches
           const batch = writeBatch(db);
-          logsSnapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
-          });
-
-          // 3. Delete the project itself
+          logsSnapshot.docs.forEach((doc) => { batch.delete(doc.ref); });
           const projectRef = doc(db, 'artifacts', appId, 'users', userId, 'projects', project.id);
           batch.delete(projectRef);
-
           await batch.commit();
-          setProjectToDelete(null); // Ensure modal closes
-        } catch (error) {
-          console.error("Error deleting project:", error);
-        }
+          setProjectToDelete(null);
+        } catch (error) { console.error("Error deleting project:", error); }
         setIsLoading(false);
       }
-
       const updateSetting = async (key, val) => {
-        const newSet = { ...settings, [key]: val };
-        onSettingsChange(newSet);
-        try {
-          await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'settings', 'userSettings'), { [key]: val }, { merge: true });
-        } catch(e){ console.error(e); }
+        const newSet = { ...settings, [key]: val }; onSettingsChange(newSet);
+        try { await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'settings', 'userSettings'), { [key]: val }, { merge: true }); } catch(e){ console.error(e); }
       };
-
-      const toggleDay = (d) => {
-        updateSetting('reminderDays', { ...settings.reminderDays, [d]: !settings.reminderDays[d] });
-      };
-
+      const toggleDay = (d) => { updateSetting('reminderDays', { ...settings.reminderDays, [d]: !settings.reminderDays[d] }); };
       const savePublicMsg = async () => {
         setIsLoading(true);
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'publicMessages', userId), { message: myPublicMsg, updatedAt: serverTimestamp() }, { merge: true });
@@ -1013,56 +663,28 @@
           </section>
 
           <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-yellow-50 rounded-lg"><Icon name="Bell" className="text-yellow-600"/></div>
-              <h2 className="text-lg font-bold text-gray-800">Reminders</h2>
-            </div>
+            <div className="flex items-center gap-3 mb-4"><div className="p-2 bg-yellow-50 rounded-lg"><Icon name="Bell" className="text-yellow-600"/></div><h2 className="text-lg font-bold text-gray-800">Reminders</h2></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Time</label>
-                <input type="time" value={settings.reminderTime} onChange={e => updateSetting('reminderTime', e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl bg-white" />
-              </div>
+              <div><label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Time</label><input type="time" value={settings.reminderTime} onChange={e => updateSetting('reminderTime', e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl bg-white" /></div>
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Days</label>
-                <div className="flex justify-between">
-                  {['sun','mon','tue','wed','thu','fri','sat'].map(d => (
-                    <button key={d} onClick={() => toggleDay(d)} className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${settings.reminderDays[d] ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-400'}`}>{d.charAt(0).toUpperCase()}</button>
-                  ))}
-                </div>
+                <div className="flex justify-between">{['sun','mon','tue','wed','thu','fri','sat'].map(d => (<button key={d} onClick={() => toggleDay(d)} className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${settings.reminderDays[d] ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-400'}`}>{d.charAt(0).toUpperCase()}</button>))}</div>
               </div>
             </div>
-            <div className="border-t border-gray-100 pt-4">
-              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Message Content</label>
-              <input type="text" value={settings.reminderMessage} onChange={e => updateSetting('reminderMessage', e.target.value)} disabled={!!settings.syncedFromUserId} className="w-full p-3 border border-gray-200 rounded-xl bg-white disabled:bg-gray-50 disabled:text-gray-400" />
-            </div>
+            <div className="border-t border-gray-100 pt-4"><label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Message Content</label><input type="text" value={settings.reminderMessage} onChange={e => updateSetting('reminderMessage', e.target.value)} disabled={!!settings.syncedFromUserId} className="w-full p-3 border border-gray-200 rounded-xl bg-white disabled:bg-gray-50 disabled:text-gray-400" /></div>
           </section>
 
           <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-3 mb-5">
-               <div className="p-2 bg-green-50 rounded-lg"><Icon name="Refresh" className="text-green-600"/></div>
-               <h2 className="text-lg font-bold text-gray-800">Sync</h2>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-gray-700 mb-2">Your User ID</h3>
-              <p className="text-xs text-gray-500 mb-2">Share this ID to let friends receive your broadcast message.</p>
-              <div className="bg-gray-100 p-3 rounded-lg font-mono text-xs break-all text-gray-700 select-all">{userId}</div>
-            </div>
-
+            <div className="flex items-center gap-3 mb-5"><div className="p-2 bg-green-50 rounded-lg"><Icon name="Refresh" className="text-green-600"/></div><h2 className="text-lg font-bold text-gray-800">Sync</h2></div>
+            <div className="mb-6"><h3 className="text-sm font-bold text-gray-700 mb-2">Your User ID</h3><p className="text-xs text-gray-500 mb-2">Share this ID to let friends receive your broadcast message.</p><div className="bg-gray-100 p-3 rounded-lg font-mono text-xs break-all text-gray-700 select-all">{userId}</div></div>
             <div className="mb-6 pt-4 border-t border-gray-100">
               <h3 className="text-sm font-bold text-gray-700 mb-2">Sync From Friend</h3>
               <div className="flex gap-2">
                 <input type="text" value={syncId} onChange={e => setSyncId(e.target.value)} placeholder="Paste User ID here" className="flex-1 p-3 border border-gray-200 rounded-xl" />
                 <button onClick={() => { if(syncId) { updateSetting('syncedFromUserId', syncId); setSyncId(''); }}} className="bg-gray-800 text-white px-4 rounded-xl font-bold">Sync</button>
               </div>
-              {settings.syncedFromUserId && (
-                <div className="mt-3 p-3 bg-blue-50 text-blue-700 text-sm rounded-xl flex justify-between items-center">
-                  <span className="truncate flex-1 mr-2">Syncing: {settings.syncedFromUserId}</span>
-                  <button onClick={() => updateSetting('syncedFromUserId', null)} className="p-1 hover:bg-blue-100 rounded"><Icon name="X" size={16}/></button>
-                </div>
-              )}
+              {settings.syncedFromUserId && (<div className="mt-3 p-3 bg-blue-50 text-blue-700 text-sm rounded-xl flex justify-between items-center"><span className="truncate flex-1 mr-2">Syncing: {settings.syncedFromUserId}</span><button onClick={() => updateSetting('syncedFromUserId', null)} className="p-1 hover:bg-blue-100 rounded"><Icon name="X" size={16}/></button></div>)}
             </div>
-
             <div className="pt-4 border-t border-gray-100">
               <h3 className="text-sm font-bold text-gray-700 mb-2">Broadcast Message</h3>
               <textarea value={myPublicMsg} onChange={e => setMyPublicMsg(e.target.value)} placeholder="Type a message for your friends..." className="w-full p-3 border border-gray-200 rounded-xl mb-3 h-24 focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
@@ -1087,52 +709,21 @@
 
       useEffect(() => {
         onAuthStateChanged(auth, async u => {
-          if (u) { 
-            setUser(u); 
-            setReady(true); 
-          }
-          else {
-            try { 
-              if(initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
-              else await signInAnonymously(auth);
-            } catch(e) { 
-              console.error("Auth error:", e);
-              setError(e.message);
-              setReady(true);
-            }
-          }
-        }, (err) => {
-           console.error("Auth observer error:", err);
-           setError(err.message);
-           setReady(true);
-        });
+          if (u) { setUser(u); setReady(true); }
+          else { try { if(initialAuthToken) await signInWithCustomToken(auth, initialAuthToken); else await signInAnonymously(auth); } catch(e) { console.error("Auth error:", e); setError(e.message); setReady(true); } }
+        }, (err) => { console.error("Auth observer error:", err); setError(err.message); setReady(true); });
       }, []);
 
       useEffect(() => {
         if(!ready || !user) return;
         const uid = user.uid;
-        
-        const unsubP = onSnapshot(query(collection(db, 'artifacts', appId, 'users', uid, 'projects')), s => {
-          setProjects(s.docs.map(d => ({id: d.id, ...d.data()})));
-        });
-        
-        const unsubL = onSnapshot(query(collection(db, 'artifacts', appId, 'users', uid, 'timeLogs')), s => {
-          setLogs(s.docs.map(d => ({id: d.id, ...d.data()})));
-        });
-        
-        const unsubS = onSnapshot(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'userSettings'), d => {
-          if(d.exists()) setSettings(prev => ({...prev, ...d.data()}));
-          else setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'userSettings'), settings, {merge:true});
-        });
-
-        const unsubPub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'publicMessages', uid), d => {
-          if(d.exists()) setPubMsg(d.data().message);
-        });
-
+        const unsubP = onSnapshot(query(collection(db, 'artifacts', appId, 'users', uid, 'projects')), s => setProjects(s.docs.map(d => ({id: d.id, ...d.data()}))), (e) => console.error(e));
+        const unsubL = onSnapshot(query(collection(db, 'artifacts', appId, 'users', uid, 'timeLogs')), s => setLogs(s.docs.map(d => ({id: d.id, ...d.data()}))), (e) => console.error(e));
+        const unsubS = onSnapshot(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'userSettings'), d => { if(d.exists()) setSettings(prev => ({...prev, ...d.data()})); else setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'userSettings'), settings, {merge:true}); }, (e) => console.error(e));
+        const unsubPub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'publicMessages', uid), d => { if(d.exists()) setPubMsg(d.data().message); }, (e) => console.error(e));
         return () => { unsubP(); unsubL(); unsubS(); unsubPub(); };
       }, [ready, user]);
 
-      // Sync Listener
       useEffect(() => {
         if(!ready || !settings.syncedFromUserId) return;
         const unsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'publicMessages', settings.syncedFromUserId), async d => {
@@ -1147,48 +738,10 @@
         return () => unsub();
       }, [ready, settings.syncedFromUserId, user]);
 
-      // Helper to check for config placeholder strings
-      const isConfigValid = useMemo(() => {
-         if (firebaseConfig.apiKey && firebaseConfig.apiKey.includes("PASTE_YOUR")) return false;
-         return true;
-      }, []);
+      const isConfigValid = useMemo(() => { if (firebaseConfig.apiKey && firebaseConfig.apiKey.includes("PASTE_YOUR")) return false; return true; }, []);
 
-      if (error) {
-        return (
-            <div className="h-screen flex flex-col items-center justify-center text-red-600 p-4 text-center">
-                <Icon name="AlertTriangle" size={48} />
-                <h2 className="text-xl font-bold mt-4">Connection Error</h2>
-                <p className="mt-2 text-sm bg-red-50 p-2 rounded border border-red-100">{error}</p>
-                <div className="mt-6 text-gray-600 text-sm text-left max-w-xs mx-auto">
-                    <p className="font-bold mb-2">Troubleshooting:</p>
-                    <ul className="list-decimal pl-5 space-y-1">
-                      <li>Check your internet connection.</li>
-                      <li>Go to Firebase Console -> Authentication -> Sign-in method -> Enable <strong>Anonymous</strong>.</li>
-                      <li>Verify your Firebase Config in <code>index.html</code>.</li>
-                    </ul>
-                </div>
-            </div>
-        );
-      }
-
-      if (!isConfigValid) {
-        return (
-            <div className="h-screen flex flex-col items-center justify-center text-gray-800 p-6 text-center">
-                <Icon name="Settings" size={48} className="text-blue-500 mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Configuration Missing</h2>
-                <p className="mb-6">You haven't pasted your Firebase configuration yet.</p>
-                <div className="text-left bg-gray-100 p-4 rounded-lg text-sm font-mono overflow-x-auto w-full max-w-md border border-gray-200">
-                  <p className="text-gray-500 mb-2">// Find this section in index.html:</p>
-                  <p className="text-blue-600">const YOUR_FIREBASE_CONFIG = &#123;</p>
-                  <p className="pl-4 text-green-600">apiKey: "PASTE_YOUR_API_KEY_HERE",</p>
-                  <p className="pl-4 text-gray-400">...</p>
-                  <p className="text-blue-600">&#125;;</p>
-                </div>
-                <p className="mt-6 text-sm text-gray-500">Replace the placeholder strings with your actual keys from the Firebase Console.</p>
-            </div>
-        );
-      }
-
+      if (error) return <div className="h-screen flex flex-col items-center justify-center text-red-600 p-4 text-center"><Icon name="AlertTriangle" size={48} /><h2 className="text-xl font-bold mt-4">Connection Error</h2><p className="mt-2 text-sm bg-red-50 p-2 rounded border border-red-100">{error}</p></div>;
+      if (!isConfigValid) return <div className="h-screen flex flex-col items-center justify-center text-gray-800 p-6 text-center"><Icon name="Settings" size={48} className="text-blue-500 mb-4" /><h2 className="text-2xl font-bold mb-2">Configuration Missing</h2><p>Please update Firebase config in index.html.</p></div>;
       if(!ready) return <div className="h-screen flex items-center justify-center text-gray-400 animate-pulse">Loading App...</div>;
 
       return (
