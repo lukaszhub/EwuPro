@@ -392,7 +392,7 @@
           <p className="text-gray-500 mb-6">Are you sure you want to delete <strong className="text-gray-800">{log.projectName}</strong> for {formatDateDisplay(log.date)}?</p>
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
-            <button type="button" onClick={() => onConfirm(log.id)} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete</button>
+            <button type="button" onClick={() => { onConfirm(log.id); onClose(); }} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete</button>
           </div>
         </div>
       </div>
@@ -449,6 +449,7 @@
 
         const total = (parseInt(hours) * 60) + parseInt(minutes);
         onSave(cleanName, total, date);
+        onClose(); // Close immediately
       }
 
       const handleNameChange = (e) => {
@@ -555,7 +556,7 @@
           <p className="text-red-600 font-bold text-sm mb-6 bg-red-50 p-2 rounded">Warning: This will also delete ALL time logs associated with this project. This cannot be undone.</p>
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
-            <button type="button" onClick={() => onConfirm(project)} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete All</button>
+            <button type="button" onClick={() => { onConfirm(project); onClose(); }} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete All</button>
           </div>
         </div>
       </div>
