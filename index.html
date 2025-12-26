@@ -82,13 +82,12 @@
     // --- FIREBASE CONFIGURATION (IMPORTANT) ---
     // You MUST replace the object below with your actual Firebase config from the Firebase Console.
     const YOUR_FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDCHXNShFd8jW-EVfik8lpL1rfgpYWPNtw",
-      authDomain: "ewupro-1fe8e.firebaseapp.com",
-      projectId: "ewupro-1fe8e",
-      storageBucket: "ewupro-1fe8e.firebasestorage.app",
-      messagingSenderId: "889231151994",
-      appId: "1:889231151994:web:4455880ec3bd5b6df97cc3",
-      measurementId: "G-F9HJ6Y08S7"
+      apiKey: "PASTE_YOUR_API_KEY_HERE",
+      authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
+      projectId: "PASTE_YOUR_PROJECT_ID_HERE",
+      storageBucket: "PASTE_YOUR_STORAGE_BUCKET_HERE",
+      messagingSenderId: "PASTE_YOUR_SENDER_ID_HERE",
+      appId: "PASTE_YOUR_APP_ID_HERE"
     };
 
     // --- App Logic Starts Here ---
@@ -256,6 +255,7 @@
             {/* Date Toggle Header */}
             <div className="flex justify-center mb-6">
               <button 
+                type="button"
                 onClick={() => setView(view === 'time' ? 'date' : 'time')}
                 className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
               >
@@ -282,16 +282,16 @@
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl active:bg-gray-200">Cancel</button>
-                  <button onClick={handleSave} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-200 active:bg-blue-700">Save</button>
+                  <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl active:bg-gray-200">Cancel</button>
+                  <button type="button" onClick={handleSave} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-200 active:bg-blue-700">Save</button>
                 </div>
               </>
             ) : (
               <div className="animate-[fadeIn_0.2s_ease-out]">
                 <div className="flex justify-between items-center mb-4">
-                  <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
+                  <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
                   <h3 className="text-md font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
-                  <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
+                  <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center mb-2">
                   {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
@@ -299,6 +299,7 @@
                 <div className="grid grid-cols-7 gap-1">
                   {days.map((d, i) => (
                     <button 
+                      type="button"
                       key={i} 
                       disabled={!d} 
                       onClick={() => handleDayClick(d)}
@@ -310,7 +311,7 @@
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setView('time')} className="w-full mt-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm">Cancel Date Change</button>
+                <button type="button" onClick={() => setView('time')} className="w-full mt-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm">Cancel Date Change</button>
               </div>
             )}
           </div>
@@ -352,9 +353,9 @@
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
             <div className="flex justify-between items-center mb-6">
-              <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
+              <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
               <h3 className="text-lg font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
-              <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
+              <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center mb-2">
               {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
@@ -362,6 +363,7 @@
             <div className="grid grid-cols-7 gap-1">
               {days.map((d, i) => (
                 <button 
+                  type="button"
                   key={i} 
                   disabled={!d} 
                   onClick={() => handleDayClick(d)}
@@ -373,7 +375,7 @@
                 </button>
               ))}
             </div>
-            <button onClick={onClose} className="w-full mt-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
+            <button type="button" onClick={onClose} className="w-full mt-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
           </div>
         </div>
       );
@@ -388,19 +390,20 @@
           <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Entry?</h3>
           <p className="text-gray-500 mb-6">Are you sure you want to delete <strong className="text-gray-800">{log.projectName}</strong> for {formatDateDisplay(log.date)}?</p>
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
-            <button onClick={() => onConfirm(log.id)} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete</button>
+            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
+            <button type="button" onClick={() => onConfirm(log.id)} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete</button>
           </div>
         </div>
       </div>
     );
 
-    const NewProjectModal = ({ onClose, onSave, initialValue }) => {
+    const NewProjectModal = ({ onClose, onSave, initialValue, projects = [] }) => {
       const [name, setName] = useState(initialValue || '');
       const [hours, setHours] = useState(0);
       const [minutes, setMinutes] = useState(0);
       const [date, setDate] = useState(getLocalDateStr()); 
       const [view, setView] = useState('time'); 
+      const [confirmedDuplicate, setConfirmedDuplicate] = useState(false);
 
       // Calendar Logic
       const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -431,10 +434,25 @@
       const isToday = (d) => d && getLocalDateStr(d) === getLocalDateStr(new Date());
 
       const handleSave = () => {
-        if (name.trim()) {
-            const total = (parseInt(hours) * 60) + parseInt(minutes);
-            onSave(name, total, date);
+        const cleanName = name.trim();
+        if (!cleanName) return;
+
+        // Duplicate Check Logic
+        const normalize = s => s.replace(/\s+/g, '').toLowerCase();
+        const isDuplicate = projects.some(p => normalize(p.name) === normalize(cleanName));
+
+        if (isDuplicate && !confirmedDuplicate) {
+            setConfirmedDuplicate(true);
+            return;
         }
+
+        const total = (parseInt(hours) * 60) + parseInt(minutes);
+        onSave(cleanName, total, date);
+      }
+
+      const handleNameChange = (e) => {
+        setName(e.target.value);
+        if (confirmedDuplicate) setConfirmedDuplicate(false); // Reset warning on change
       }
 
       return (
@@ -446,13 +464,22 @@
               type="text" 
               placeholder="Project Name" 
               value={name} 
-              onChange={e => setName(e.target.value)} 
-              className="w-full p-3 border border-gray-200 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              onChange={handleNameChange} 
+              className={`w-full p-3 border rounded-xl mb-2 focus:outline-none focus:ring-2 font-medium ${confirmedDuplicate ? 'border-red-300 ring-red-200' : 'border-gray-200 focus:ring-blue-500'}`}
             />
+            
+            {confirmedDuplicate && (
+              <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center font-medium animate-[pulse_2s_infinite]">
+                Project name already exists. Create anyway?
+              </div>
+            )}
+
+            {!confirmedDuplicate && <div className="mb-4"></div>}
 
             {/* Date Toggle */}
             <div className="flex justify-center mb-6">
               <button 
+                type="button"
                 onClick={() => setView(view === 'time' ? 'date' : 'time')}
                 className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
               >
@@ -479,16 +506,16 @@
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
-                  <button onClick={handleSave} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg">Create</button>
+                  <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
+                  <button type="button" onClick={handleSave} className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg">{confirmedDuplicate ? 'Confirm' : 'Create'}</button>
                 </div>
               </>
             ) : (
               <div className="animate-[fadeIn_0.2s_ease-out]">
                 <div className="flex justify-between items-center mb-4">
-                  <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
+                  <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronLeft" /></button>
                   <h3 className="text-md font-bold text-gray-800">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
-                  <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
+                  <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icon name="ChevronRight" /></button>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center mb-2">
                   {['S','M','T','W','T','F','S'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
@@ -496,6 +523,7 @@
                 <div className="grid grid-cols-7 gap-1">
                   {days.map((d, i) => (
                     <button 
+                      type="button"
                       key={i} 
                       disabled={!d} 
                       onClick={() => handleDayClick(d)}
@@ -507,7 +535,7 @@
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setView('time')} className="w-full mt-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm">Cancel Date Change</button>
+                <button type="button" onClick={() => setView('time')} className="w-full mt-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm">Cancel Date Change</button>
               </div>
             )}
           </div>
@@ -525,8 +553,8 @@
           <p className="text-gray-600 mb-2">Are you sure you want to delete <strong className="text-gray-900">{project.name}</strong>?</p>
           <p className="text-red-600 font-bold text-sm mb-6 bg-red-50 p-2 rounded">Warning: This will also delete ALL time logs associated with this project. This cannot be undone.</p>
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
-            <button onClick={() => onConfirm(project)} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete All</button>
+            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl">Cancel</button>
+            <button type="button" onClick={() => onConfirm(project)} className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-200">Delete All</button>
           </div>
         </div>
       </div>
@@ -726,7 +754,7 @@
           {selectedLog && <TimePickerModal log={selectedLog} onClose={() => setSelectedLog(null)} onSave={handleTimeSave} />}
           {logToDelete && <DeleteConfirmationModal log={logToDelete} onClose={() => setLogToDelete(null)} onConfirm={handleDelete} />}
           {logToEditDate && <DatePickerModal selectedDate={logToEditDate.date} onClose={() => setLogToEditDate(null)} onSave={handleDateSave} />}
-          {isNewProjectModalOpen && <NewProjectModal onClose={() => setIsNewProjectModalOpen(false)} onSave={handleQuickAddProject} initialValue={search} />}
+          {isNewProjectModalOpen && <NewProjectModal onClose={() => setIsNewProjectModalOpen(false)} onSave={handleQuickAddProject} initialValue={search} projects={projects} />}
         </div>
       );
     };
@@ -901,7 +929,7 @@
           batch.delete(projectRef);
 
           await batch.commit();
-          setProjectToDelete(null);
+          setProjectToDelete(null); // Ensure modal closes
         } catch (error) {
           console.error("Error deleting project:", error);
         }
