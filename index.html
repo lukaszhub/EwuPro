@@ -239,7 +239,7 @@
       return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[5000] p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-fade-in">
-            <h3 className="text-xl font-bold text-gray-800 text-center mb-2">{project.name}</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">{project.name}</h3>
             <div className="flex justify-center mb-6">
               <button type="button" onClick={() => setView(view === 'time' ? 'date' : 'time')} className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
                 <Icon name="Calendar" size={16} /> {formatDateDisplay(date)} <Icon name={view === 'time' ? 'ChevronRight' : 'ChevronDown'} size={14} />
@@ -392,7 +392,7 @@
         const cleanName = name.trim();
         if (!cleanName) return;
         const normalize = s => s.replace(/\s+/g, '').toLowerCase();
-        // Just checking if project *name* exists for duplicate warning
+        // Check if project *name* exists
         const isDuplicate = projects.some(p => normalize(p.name) === normalize(cleanName));
         if (isDuplicate && !confirmedDuplicate) { setConfirmedDuplicate(true); return; }
         const total = (Number(hours) * 60) + Number(minutes);
