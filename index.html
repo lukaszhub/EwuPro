@@ -96,7 +96,6 @@
       measurementId: "G-F9HJ6Y08S7"
     };
 
-    // --- App Logic Starts Here ---
     const {
       initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
       getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
@@ -341,7 +340,7 @@
         const isDuplicate = projects.some(p => normalize(p.name) === normalize(cleanName));
         if (isDuplicate && !confirmedDuplicate) { setConfirmedDuplicate(true); return; }
         const total = (Number(hours) * 60) + Number(minutes);
-        onClose(); // CLOSE IMMEDIATELY (Optimistic UI)
+        onClose(); // CLOSE IMMEDIATELY
         onSave(cleanName, total, date);
       }
       const handleNameChange = (e) => { setName(e.target.value); if (confirmedDuplicate) setConfirmedDuplicate(false); }
@@ -618,7 +617,10 @@
         try { await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { name: newProj.trim(), createdAt: serverTimestamp() }); setNewProj(''); } catch(e){ console.error(e); }
         setIsLoading(false);
       };
+      
       const handleDeleteProject = async (project) => {
+        // CLOSE MODAL IMMEDIATELY
+        setProjectToDelete(null); 
         setIsLoading(true);
         try {
           const logsQuery = query(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), where('projectId', '==', project.id));
@@ -628,10 +630,14 @@
           const projectRef = doc(db, 'artifacts', appId, 'users', userId, 'projects', project.id);
           batch.delete(projectRef);
           await batch.commit();
-          setProjectToDelete(null);
-        } catch (error) { console.error("Error deleting project:", error); }
+          alert("Project deleted");
+        } catch (error) { 
+            console.error("Error deleting project:", error);
+            alert("Delete failed: " + error.message);
+        }
         setIsLoading(false);
       }
+      
       const updateSetting = async (key, val) => {
         const newSet = { ...settings, [key]: val }; onSettingsChange(newSet);
         try { await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'settings', 'userSettings'), { [key]: val }, { merge: true }); } catch(e){ console.error(e); }
