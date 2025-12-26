@@ -13,16 +13,27 @@
   <!-- 1. Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- 2. Tailwind Config -->
+  <!-- 2. Tailwind Config (for Inter font) -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
-          animation: { 'fade-in-up': 'fadeInUp 0.3s ease-out forwards', 'fade-in': 'fadeIn 0.2s ease-out forwards' },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          animation: {
+            'fade-in-up': 'fadeInUp 0.3s ease-out forwards',
+            'fade-in': 'fadeIn 0.2s ease-out forwards',
+          },
           keyframes: {
-            fadeInUp: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } }
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            }
           }
         },
       },
@@ -33,16 +44,25 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
-  <!-- 4. Babel -->
+  <!-- 4. Babel (for JSX) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    /* Custom scrollbar for desktop */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
     ::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-    input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
+    
+    /* Hide native date picker icon */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      display: none;
+      -webkit-appearance: none;
+    }
+    
+    /* Mobile tap highlight fix */
     * { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
@@ -53,15 +73,16 @@
   <!-- 5. Firebase JS SDKs -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
       getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, 
       onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp,
       setLogLevel, enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     
+    // Make Firebase available to React
     window.firebase = {
-      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence,
       getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
       onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, setLogLevel, enableIndexedDbPersistence
     };
@@ -83,13 +104,18 @@
       measurementId: "G-F9HJ6Y08S7"
     };
 
+    // --- App Logic Starts Here ---
+    
     const {
-      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence,
       getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
       onSnapshot, collection, query, where, getDocs, writeBatch, serverTimestamp, setLogLevel, enableIndexedDbPersistence
     } = window.firebase;
 
-    const firebaseConfig = (typeof __firebase_config !== 'undefined') ? JSON.parse(__firebase_config) : YOUR_FIREBASE_CONFIG;
+    const firebaseConfig = (typeof __firebase_config !== 'undefined') 
+      ? JSON.parse(__firebase_config) 
+      : YOUR_FIREBASE_CONFIG;
+      
     const appId = (typeof __app_id !== 'undefined') ? __app_id : 'ewupro-app';
     const initialAuthToken = (typeof __initial_auth_token !== 'undefined') ? __initial_auth_token : null;
 
@@ -98,9 +124,21 @@
       app = initializeApp(firebaseConfig);
       db = getFirestore(app);
       auth = getAuth(app);
-      enableIndexedDbPersistence(db).catch(err => console.log('Persistence:', err.code));
-    } catch (e) { console.error("Firebase Init Error", e); }
+      
+      // Enable offline persistence
+      enableIndexedDbPersistence(db).catch((err) => {
+          if (err.code == 'failed-precondition') {
+              console.log('Persistence failed: Multiple tabs open');
+          } else if (err.code == 'unimplemented') {
+              console.log('Persistence failed: Browser not supported');
+          }
+      });
+      
+    } catch (e) {
+      console.error("Firebase Init Error", e);
+    }
 
+    // --- Helper: Local Date String (YYYY-MM-DD) ---
     const getLocalDateStr = (date = new Date()) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -135,6 +173,7 @@
       return <span className={className}>{icons[name] || null}</span>;
     };
 
+    // --- Formatters ---
     const formatTime = (totalMinutes) => {
       const t = Number(totalMinutes);
       if (isNaN(t) || t === 0) return '0m';
@@ -353,6 +392,7 @@
         const cleanName = name.trim();
         if (!cleanName) return;
         const normalize = s => s.replace(/\s+/g, '').toLowerCase();
+        // Just checking if project *name* exists for duplicate warning
         const isDuplicate = projects.some(p => normalize(p.name) === normalize(cleanName));
         if (isDuplicate && !confirmedDuplicate) { setConfirmedDuplicate(true); return; }
         const total = (Number(hours) * 60) + Number(minutes);
@@ -366,7 +406,7 @@
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-fade-in">
             <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">New Project</h3>
             <input type="text" placeholder="Project Name" value={name} onChange={handleNameChange} className={`w-full p-3 border rounded-xl mb-2 focus:outline-none focus:ring-2 font-medium ${confirmedDuplicate ? 'border-red-300 ring-red-200' : 'border-gray-200 focus:ring-blue-500'}`} />
-            {confirmedDuplicate ? <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center font-medium animate-pulse">Project name already exists. Create anyway?</div> : <div className="mb-4"></div>}
+            {confirmedDuplicate ? <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center font-medium animate-pulse">Project name already exists. Using it will merge time logs. Create?</div> : <div className="mb-4"></div>}
             <div className="flex justify-center mb-6">
               <button type="button" onClick={() => setView(view === 'time' ? 'date' : 'time')} className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"><Icon name="Calendar" size={16} /> {formatDateDisplay(date)} <Icon name={view === 'time' ? 'ChevronRight' : 'ChevronDown'} size={14} /></button>
             </div>
@@ -508,18 +548,40 @@
       const handleQuickAddProject = async (name, totalMinutes, date) => {
         if(!userId) return;
         try {
-          // Force numbers to prevent NaN
           const safeTotal = Number(totalMinutes) || 0;
           const safeDate = date || getLocalDateStr();
-          const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { name: name.trim(), createdAt: serverTimestamp() });
-          
-          await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), { 
-            projectId: docRef.id, 
-            projectName: name.trim(), 
-            date: safeDate, 
-            totalMinutes: safeTotal, 
-            createdAt: serverTimestamp() 
-          });
+
+          // 1. CHECK IF PROJECT EXISTS (IgnoreCase, IgnoreSpaces)
+          const normalize = s => s.replace(/\s+/g, '').toLowerCase();
+          const existingProject = projects.find(p => normalize(p.name) === normalize(name.trim()));
+
+          let projectId;
+          if (existingProject) {
+              // Use existing project
+              projectId = existingProject.id;
+          } else {
+              // Create new project
+              const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'projects'), { name: name.trim(), createdAt: serverTimestamp() });
+              projectId = docRef.id;
+          }
+
+          // 2. CHECK IF LOG EXISTS FOR THIS PROJECT ON THIS DATE
+          const existingLog = logs.find(l => l.date === safeDate && l.projectId === projectId);
+
+          if (existingLog) {
+             // Merge
+             const newTotal = existingLog.totalMinutes + safeTotal;
+             await updateDoc(doc(db, 'artifacts', appId, 'users', userId, 'timeLogs', existingLog.id), { totalMinutes: newTotal });
+          } else {
+              // Create Log
+              await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'timeLogs'), { 
+                projectId: projectId, 
+                projectName: existingProject ? existingProject.name : name.trim(), 
+                date: safeDate, 
+                totalMinutes: safeTotal, 
+                createdAt: serverTimestamp() 
+              });
+          }
           
           triggerSuccess(); // Visual Feedback
         } catch(e) { console.error(e); alert("Creation Failed: " + e.message); }
